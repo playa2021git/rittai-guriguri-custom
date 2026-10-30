@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>立体グリグリ Vibe-Coded V1.22</title>
+<title>立体グリグリ custom｜Chromebook 作図学習</title>
 <style>
   html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;font-family:system-ui,"Hiragino Sans","Yu Gothic",sans-serif}
   #app{display:flex;width:100vw;height:100vh;background:#000}
@@ -219,13 +219,49 @@
   body.light-ui .infoActionButton.specialDrawing{background:#fff;color:#111;border-color:#111;box-shadow:0 0 0 1px rgba(0,0,0,.10) inset}
   body.light-ui .infoActionButton.specialDrawing .infoKey{background:#eee;color:#111;border-color:#999}
   body.light-ui .infoActionButton.specialDrawing:hover{background:#f2f2f2}
+
+  #dualshockHelp,#padStatus{display:none!important}
+  #displaySizeControls{position:absolute;left:14px;bottom:14px;z-index:40;display:flex;flex-wrap:wrap;align-items:center;gap:8px;max-width:calc(100% - 28px);touch-action:manipulation}
+  #displaySizeControls >button{position:static;min-width:0;min-height:44px;padding:8px 12px;border:1px solid #777;border-radius:10px;background:#222;color:#eee;font:700 15px/1.4 system-ui,sans-serif;cursor:pointer;box-shadow:none;touch-action:manipulation}
+  #displaySizeControls >button:hover{background:#383838}
+  #displaySizeControls >button:focus-visible{outline:3px solid #ffba4a;outline-offset:2px}
+  body.light-ui #displaySizeControls >button{background:#fff;color:#222}
+  #bottomRightControls{bottom:70px}
+  #lessonControls{padding:10px;margin-bottom:12px;border:1px solid #728da5;border-radius:10px;color:inherit}
+  #lessonControls label{display:block;margin-top:8px}
+  #lessonSelect{width:100%;min-height:44px;font:inherit}
+  #lessonStatus{font-size:13px;line-height:1.5}
+  button:disabled{cursor:default;opacity:.45}
+  #learningControls{padding:10px;margin-bottom:12px;border:1px solid #728da5;border-radius:10px;background:#163047;color:#fff}
+  #learningControls label{display:block;margin:8px 0}
+  #learningControls select,#learningControls button{width:100%;min-height:40px;font:inherit}
+  #learningControls input{width:20px;height:20px;vertical-align:middle}
+  #learningControls p{font-size:12px;margin:6px 0}
+  #learningControls .minor{color:#69cbe5} #learningControls .major{color:#ffb74d}
+  button{touch-action:manipulation}
+  @media(max-width:900px){#info{width:260px;flex-basis:260px;padding:10px}body.info-hidden #info{margin-left:-260px}#infoToggle{left:260px}#topRightInfo{top:54px}#griButtonPanel{top:94px}}
 </style>
 </head>
-<body class="info-hidden">
+<body>
 <div id="startupTitleOverlay" aria-label="立体グリグリ起動画面"><img src="title.png" alt="立体グリグリ Vibe Coded V1.0" /></div>
 <button id="infoToggle" type="button">＞操作説明表示</button>
 <div id="app">
   <div id="info">
+    <section id="lessonControls" aria-label="授業用">
+      <strong id="lessonHeading">授業用</strong>
+      <label for="lessonSelect">問題を選ぶ</label>
+      <select id="lessonSelect"></select>
+      <p id="lessonStatus" role="status" aria-live="polite"></p>
+    </section>
+    <section id="learningControls" aria-label="作図学習">
+      <strong>紙にかくための作図学習</strong>
+      <label><input id="learningGrid" type="checkbox" checked> 5mm・10mmの点線目盛り</label>
+      <p><span class="minor">青：5mm</span> ／ <span class="major">橙：10mm</span><br>10mm＝1cm、30mm＝3cm</p>
+      <label for="learningDimensions">寸法線・寸法値（mm）</label>
+      <select id="learningDimensions"><option value="none">表示しない</option><option value="ortho">三面図のみ</option><option value="iso">等角図のみ</option><option value="both">両方表示</option></select>
+      <button id="learningReset" type="button">三面図＋等角図にそろえる</button>
+      <p>ドラッグで回転、2本指の上下スクロールで拡大縮小。数値は立体の寸法です。画面上の長さは実寸ではありません。STLは1単位＝1mmとして表示します。</p>
+    </section>
     <div id="infoActionPanel" class="infoActionPanel" aria-label="主要操作ボタン">
       <button class="infoActionButton" type="button" data-info-action="top"><span class="infoKey">3</span><span class="infoLabel">：平面図</span></button>
       <button id="infoDrawingModeButton" class="infoActionButton specialDrawing" type="button" data-info-action="drawing-mode"><span class="infoKey">D</span><span class="infoLabel">：.gri描画</span></button>
@@ -309,7 +345,7 @@
     <div id="padStatus" class="small">ゲームパッド：未接続 または 未操作</div>
     <div id="testStatus" class="small">自己テスト：未実行</div>
   </div>
-  <div id="viewer" tabindex="-1"><canvas id="canvas"></canvas><button id="viewModeButton" type="button">４面モードにする</button><div id="drawingModeLabel">.gri描画</div><div id="topRightInfo"><div id="appTitle">立体グリグリ Vibe-Coded V1.22</div></div><div id="bottomRightControls"><div id="modelFileNameDisplay" style="display:none"></div><button id="externalInfoButton" type="button" aria-haspopup="dialog" aria-expanded="false">ⓘ 外部通信・ライセンス</button><button id="embeddedStlButton" type="button">内蔵STL</button></div><div id="embeddedStlPopup"><div id="embeddedStlPopupHeader"><span>内蔵STLを読み込む</span><button id="embeddedStlPopupClose" type="button" aria-label="閉じる">×</button></div><div id="embeddedStlPopupList"></div></div><button id="hiddenLineToggleBottom" type="button">かくれ線を表示する</button><button id="surfaceToggleBottom" type="button">面の色を表示しない</button><button id="modeToggleBottom" type="button">.gri描画にする</button><div id="griButtonPanel" aria-label="GRI描画ボタン操作">
+  <div id="viewer" tabindex="-1"><canvas id="canvas"></canvas><div id="displaySizeControls" role="group" aria-label="立体の表示操作"><button id="hiddenLineToggleBottom" type="button">かくれ線を表示する</button><button id="surfaceToggleBottom" type="button">面の色を表示しない</button><button id="displaySizeMinus" type="button" aria-label="表示サイズを縮小">− 縮小</button><button id="displaySizePlus" type="button" aria-label="表示サイズを拡大">＋ 拡大</button></div><button id="viewModeButton" type="button">４面モードにする</button><div id="drawingModeLabel">.gri描画</div><div id="topRightInfo"><div id="appTitle">立体グリグリ custom｜原作・謝辞</div></div><div id="bottomRightControls"><div id="modelFileNameDisplay" style="display:none"></div><button id="externalInfoButton" type="button" aria-haspopup="dialog" aria-expanded="false">ⓘ 原作・謝辞・ライセンス</button><button id="embeddedStlButton" type="button">内蔵STL</button></div><div id="embeddedStlPopup"><div id="embeddedStlPopupHeader"><span>内蔵STLを読み込む</span><button id="embeddedStlPopupClose" type="button" aria-label="閉じる">×</button></div><div id="embeddedStlPopupList"></div></div><button id="modeToggleBottom" type="button">.gri描画にする</button><div id="griButtonPanel" aria-label="GRI描画ボタン操作">
   <div id="griPanelTitleBar">作図ツール</div>
   <div class="griButtonGrid">
     <button type="button" class="jumpBtn" data-gri-action="x10minus">＜</button>
@@ -332,10 +368,17 @@
   </div>
   <div id="stepControl"><span id="stepLabel">ステップ：20mm</span><select id="stepSelect"><option value="20" selected>20mm</option><option value="10">10mm</option><option value="5">5mm</option><option value="1">1mm</option></select></div>
   <div id="drawingModeExitRow"><button id="drawingModeExitButton" type="button">.gri描画をやめる</button></div>
-</div><div id="confirmOverlay"><div id="confirmBox"><div id="confirmMessage">本当に消しますか？</div><div class="buttons"><button id="confirmYes" type="button">はい</button><button id="confirmNo" type="button">いいえ</button></div></div></div><div id="aboutOverlay"><div id="aboutBox"><div id="aboutText"><p>「立体グリグリ」は、第三角法による正投影図の学習のために、1996年頃に川俣純がMS-DOS上で動作するアプリケーションとして開発しました。このバージョンは、バイブコーディングにて30年後の2026年5月にChatGPT5.5と共に制作したものです。CC BYとしますので、ユーザーの判断にて自由に改変してご活用いただいて問題ありません。</p><p>STLファイルを読み込めるようにしてみました。ただし、STLファイルを作成することはできません。TinkercadなどのツールでSTLファイルを作成し、そのファイルを読み込ませてみてください。隠れ線の表示などもほぼできます。</p><p style="text-align:right;margin-top:1.2em">2026年5月　川俣　純</p></div><button id="aboutClose" type="button">閉じる</button></div></div>
+</div><div id="confirmOverlay"><div id="confirmBox"><div id="confirmMessage">本当に消しますか？</div><div class="buttons"><button id="confirmYes" type="button">はい</button><button id="confirmNo" type="button">いいえ</button></div></div></div><div id="aboutOverlay"><div id="aboutBox"><div id="aboutText"><h3>原作・謝辞・この版の変更点</h3>
+    <p>原作は川俣純先生の<a href="https://jkawamata.github.io/rittai-guriguri-ipad/" target="_blank" rel="noopener noreferrer">「立体グリグリ」</a>です（<a href="https://github.com/jkawamata/rittai-guriguri-ipad" target="_blank" rel="noopener noreferrer">原作のソースコード</a>）。長年の開発と、授業で改変・活用できる形での公開に心より感謝申し上げます。</p>
+    <p>この「custom」は、原作を基にChromebookと紙への作図練習に合わせて改変した派生版です。5mm／10mmの色分け点線目盛り、mm単位の寸法線、拡大・縮小ボタン、授業用GRI教材8個と寸法調整、出題時の表示制限と先生用解除、全教材の面色・隠れ線切り替えを追加・調整しました。ゲームコントローラーの案内と読み取りは停止しています。</p>
+    <p>原作者：川俣 純先生。改変版のソースコード：<a href="https://github.com/playa2021git/rittai-guriguri-custom" target="_blank" rel="noopener noreferrer">立体グリグリ custom</a>。原作と本版は<a href="https://creativecommons.org/licenses/by/4.0/deed.ja" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>の条件で利用・改変・再配布できます。</p></div><button id="aboutClose" type="button">閉じる</button></div></div>
 <div id="externalInfoOverlay" role="dialog" aria-modal="true" aria-labelledby="externalInfoTitle">
   <div id="externalInfoBox" tabindex="-1">
-    <h2 id="externalInfoTitle">外部通信・データ・ライセンス</h2>
+    <h2 id="externalInfoTitle">この教材・原作・ライセンス</h2>
+    <h3>原作・謝辞・この版の変更点</h3>
+    <p>原作は川俣純先生の<a href="https://jkawamata.github.io/rittai-guriguri-ipad/" target="_blank" rel="noopener noreferrer">「立体グリグリ」</a>です（<a href="https://github.com/jkawamata/rittai-guriguri-ipad" target="_blank" rel="noopener noreferrer">原作のソースコード</a>）。長年の開発と、授業で改変・活用できる形での公開に心より感謝申し上げます。</p>
+    <p>この「custom」は、原作を基にChromebookと紙への作図練習に合わせて改変した派生版です。5mm／10mmの色分け点線目盛り、mm単位の寸法線、拡大・縮小ボタン、授業用GRI教材8個と寸法調整、出題時の表示制限と先生用解除、全教材の面色・隠れ線切り替えを追加・調整しました。ゲームコントローラーの案内と読み取りは停止しています。</p>
+    <p>原作者：川俣 純先生。改変版のソースコード：<a href="https://github.com/playa2021git/rittai-guriguri-custom" target="_blank" rel="noopener noreferrer">立体グリグリ custom</a>。原作と本版は<a href="https://creativecommons.org/licenses/by/4.0/deed.ja" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>の条件で利用・改変・再配布できます。</p>
     <div id="externalInfoSummary">この版は、外部Web API・公開CSV／JSON・CDN・アクセス解析・広告へ自動アクセスしません。通信先と適用条件を以下に一覧で示します。</div>
     <h3>通信先と利用条件の一覧</h3>
     <div id="externalInfoTableWrap">
@@ -344,10 +387,10 @@
         <tbody>
           <tr><th scope="row">外部Web API・公開CSV／JSON</th><td class="externalInfoNone">なし</td><td>アクセスしません。</td><td>該当なし</td></tr>
           <tr><th scope="row">CDN・外部ライブラリー</th><td class="externalInfoNone">なし</td><td>外部のJavaScript、CSS、Webフォントを読み込みません。プログラムとCSSはHTML内にあり、端末のシステムフォントを使用します。</td><td>該当なし</td></tr>
-          <tr><th scope="row">アプリ本体・起動画像の配信</th><td>ローカル利用時：同じフォルダ<br>公開版：<a href="https://jkawamata.github.io/rittai-guriguri-ipad/" target="_blank" rel="noopener noreferrer">jkawamata.github.io</a></td><td>公開版を開いたときに、同じ公開元から <code>index.html</code> と <code>title.png</code> を取得します。ローカルファイルとして開く場合、インターネット通信はありません。</td><td>アプリの内容はCC BY 4.0。Web配信には<a href="https://docs.github.com/ja/pages/getting-started-with-github-pages/what-is-github-pages" target="_blank" rel="noopener noreferrer">GitHub Pages</a>、<a href="https://docs.github.com/ja/site-policy/github-terms/github-terms-of-service" target="_blank" rel="noopener noreferrer">GitHub利用規約</a>、<a href="https://docs.github.com/ja/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener noreferrer">プライバシー・ステートメント</a>が適用されます。</td></tr>
+          <tr><th scope="row">アプリ本体・起動画像の配信</th><td>ローカル利用時：同じフォルダ<br>公開版：<a href="https://playa2021git.github.io/rittai-guriguri-custom/" target="_blank" rel="noopener noreferrer">playa2021git.github.io</a></td><td>公開版を開いたときに、同じ公開元から <code>index.html</code> と <code>title.png</code> を取得します。ローカルファイルとして開く場合、インターネット通信はありません。</td><td>アプリの内容はCC BY 4.0。Web配信には<a href="https://docs.github.com/ja/pages/getting-started-with-github-pages/what-is-github-pages" target="_blank" rel="noopener noreferrer">GitHub Pages</a>、<a href="https://docs.github.com/ja/site-policy/github-terms/github-terms-of-service" target="_blank" rel="noopener noreferrer">GitHub利用規約</a>、<a href="https://docs.github.com/ja/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener noreferrer">プライバシー・ステートメント</a>が適用されます。</td></tr>
           <tr><th scope="row">起動用・内蔵STL</th><td class="externalInfoNone">外部アクセスなし</td><td>起動用STLと26個の内蔵STLはHTML内から読み出します。</td><td>個別の表示がないものは、アプリの配布物としてCC BY 4.0の条件に従います。</td></tr>
           <tr><th scope="row">利用者が選んだファイル</th><td class="externalInfoNone">外部送信先なし</td><td>GRI・TXT・STLを端末内で読み込み、外部へアップロードしません。</td><td>ファイルの権利と利用条件は、そのファイルの権利者・利用者が管理します。</td></tr>
-          <tr><th scope="row">この説明内の外部リンク</th><td><a href="https://creativecommons.org/licenses/by/4.0/deed.ja" target="_blank" rel="noopener noreferrer">creativecommons.org</a><br><a href="https://docs.github.com/ja/" target="_blank" rel="noopener noreferrer">docs.github.com</a></td><td>利用者がリンクを押したときだけ、説明ページを開くために通信します。リンク先からプログラムやデータを取り込みません。</td><td>各リンク先サイトの利用条件が適用されます。CC BYのリンクは、このアプリのライセンス条件を確認するためのものです。</td></tr>
+          <tr><th scope="row">この説明内の外部リンク</th><td><a href="https://jkawamata.github.io/rittai-guriguri-ipad/" target="_blank" rel="noopener noreferrer">原作の公開ページ</a><br><a href="https://github.com/jkawamata/rittai-guriguri-ipad" target="_blank" rel="noopener noreferrer">github.com</a><br><a href="https://creativecommons.org/licenses/by/4.0/deed.ja" target="_blank" rel="noopener noreferrer">creativecommons.org</a><br><a href="https://docs.github.com/ja/" target="_blank" rel="noopener noreferrer">docs.github.com</a></td><td>利用者がリンクを押したときだけ、説明ページを開くために通信します。リンク先からプログラムやデータを取り込みません。</td><td>各リンク先サイトの利用条件が適用されます。CC BYのリンクは、このアプリのライセンス条件を確認するためのものです。</td></tr>
         </tbody>
       </table>
     </div>
@@ -364,6 +407,195 @@
 </div>
 <div id="stlTimeoutOverlay"><div id="stlTimeoutBox"><div id="stlTimeoutMessage">読み込みと表示に時間がかかりすぎるので、この立体は読み込めません。</div><button id="stlTimeoutBack" type="button">戻る</button></div></div></div>
 </div>
+<script>
+const LESSON_LIBRARY=[{"id": "lesson-cube-20mm", "name": "立方体（1辺20mm）", "mode": "open", "text": "12 10 10 10\n0 0 0 0 0 20\n0 0 20 0 20 20\n0 20 20 0 20 0\n0 20 0 20 20 0\n20 20 0 20 0 0\n20 0 0 20 0 20\n20 0 20 20 20 20\n20 20 20 20 20 0\n0 0 0 0 20 0\n0 20 20 20 20 20\n20 0 20 0 0 20\n0 0 0 20 0 0\n", "faces": [[[0.0, 0.0, 0.0], [0.0, 20.0, 0.0], [0.0, 20.0, 20.0]], [[0.0, 20.0, 20.0], [0.0, 0.0, 20.0], [0.0, 0.0, 0.0]], [[20.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], [[0.0, 0.0, 20.0], [20.0, 0.0, 20.0], [20.0, 0.0, 0.0]], [[0.0, 20.0, 0.0], [0.0, 0.0, 0.0], [20.0, 0.0, 0.0]], [[20.0, 0.0, 0.0], [20.0, 20.0, 0.0], [0.0, 20.0, 0.0]], [[0.0, 20.0, 20.0], [0.0, 0.0, 20.0], [20.0, 0.0, 20.0]], [[20.0, 0.0, 20.0], [20.0, 20.0, 20.0], [0.0, 20.0, 20.0]], [[20.0, 0.0, 20.0], [20.0, 0.0, 0.0], [20.0, 20.0, 0.0]], [[20.0, 20.0, 0.0], [20.0, 20.0, 20.0], [20.0, 0.0, 20.0]], [[0.0, 20.0, 0.0], [0.0, 20.0, 20.0], [20.0, 20.0, 20.0]], [[20.0, 20.0, 20.0], [20.0, 20.0, 0.0], [0.0, 20.0, 0.0]]]}, {"id": "lesson-7", "name": "2022等角図点つなぎプリント2個目立方体＋滑り台お手本", "mode": "open", "text": "15 15 10 10\n0 0 0 30 0 0\n30 0 0 30 20 0\n30 20 0 0 20 0\n0 20 0 0 0 0\n0 0 0 0 0 20\n0 0 20 0 20 20\n0 20 20 0 20 0\n0 20 20 20 20 20\n20 20 20 20 0 20\n20 0 20 0 0 20\n20 0 20 30 0 20\n30 0 20 30 0 0\n30 20 0 30 0 20\n20 0 20 20 20 0\n20 20 0 20 20 20\n", "faces": [[[0.0, 0.0, 0.0], [0.0, 20.0, 0.0], [0.0, 20.0, 20.0]], [[0.0, 20.0, 20.0], [0.0, 0.0, 20.0], [0.0, 0.0, 0.0]], [[30.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], [[0.0, 0.0, 20.0], [30.0, 0.0, 20.0], [30.0, 0.0, 0.0]], [[0.0, 20.0, 0.0], [0.0, 0.0, 0.0], [30.0, 0.0, 0.0]], [[30.0, 0.0, 0.0], [30.0, 20.0, 0.0], [0.0, 20.0, 0.0]], [[0.0, 0.0, 20.0], [20.0, 0.0, 20.0], [20.0, 20.0, 20.0]], [[20.0, 20.0, 20.0], [0.0, 20.0, 20.0], [0.0, 0.0, 20.0]], [[30.0, 0.0, 0.0], [30.0, 20.0, 0.0], [30.0, 0.0, 20.0]], [[20.0, 0.0, 20.0], [30.0, 0.0, 20.0], [30.0, 20.0, 0.0]], [[30.0, 20.0, 0.0], [20.0, 20.0, 0.0], [20.0, 0.0, 20.0]], [[20.0, 0.0, 20.0], [20.0, 20.0, 0.0], [20.0, 20.0, 20.0]], [[20.0, 20.0, 0.0], [0.0, 20.0, 0.0], [0.0, 20.0, 20.0]], [[0.0, 20.0, 20.0], [20.0, 20.0, 20.0], [20.0, 20.0, 0.0]]]}, {"id": "lesson-5", "name": "2022等角図プリント③台の上に小さな立方体", "mode": "open", "text": "21 10 10 10\n0 0 0 20 0 0\n20 0 0 20 10 0\n20 10 0 10 10 0\n10 10 0 10 20 0\n10 20 0 0 20 0\n0 20 0 0 20 10\n0 20 10 10 20 10\n10 20 10 10 20 0\n0 0 0 0 20 0\n0 0 0 0 0 20\n0 0 20 0 10 20\n0 10 20 0 10 10\n0 10 10 0 20 10\n0 0 20 20 0 20\n20 0 20 20 0 0\n20 10 0 20 10 20\n20 10 20 0 10 20\n0 10 10 10 10 10\n10 10 10 10 20 10\n10 10 10 10 10 0\n20 0 20 20 10 20\n", "faces": [[[0.0, 0.0, 0.0], [20.0, 0.0, 0.0], [20.0, 10.0, 0.0]], [[0.0, 0.0, 0.0], [20.0, 10.0, 0.0], [10.0, 10.0, 0.0]], [[0.0, 0.0, 0.0], [10.0, 10.0, 0.0], [10.0, 20.0, 0.0]], [[10.0, 20.0, 0.0], [0.0, 20.0, 0.0], [0.0, 0.0, 0.0]], [[10.0, 10.0, 0.0], [10.0, 20.0, 0.0], [10.0, 20.0, 10.0]], [[10.0, 20.0, 10.0], [10.0, 10.0, 10.0], [10.0, 10.0, 0.0]], [[0.0, 10.0, 10.0], [0.0, 10.0, 20.0], [20.0, 10.0, 20.0]], [[20.0, 10.0, 20.0], [20.0, 10.0, 0.0], [10.0, 10.0, 0.0]], [[20.0, 10.0, 20.0], [10.0, 10.0, 0.0], [10.0, 10.0, 10.0]], [[20.0, 10.0, 20.0], [10.0, 10.0, 10.0], [0.0, 10.0, 10.0]], [[20.0, 0.0, 0.0], [20.0, 10.0, 0.0], [20.0, 10.0, 20.0]], [[20.0, 10.0, 20.0], [20.0, 0.0, 20.0], [20.0, 0.0, 0.0]], [[0.0, 10.0, 20.0], [0.0, 0.0, 20.0], [20.0, 0.0, 20.0]], [[20.0, 0.0, 20.0], [20.0, 10.0, 20.0], [0.0, 10.0, 20.0]], [[0.0, 0.0, 0.0], [0.0, 20.0, 0.0], [0.0, 20.0, 10.0]], [[0.0, 0.0, 0.0], [0.0, 20.0, 10.0], [0.0, 10.0, 10.0]], [[0.0, 0.0, 0.0], [0.0, 10.0, 10.0], [0.0, 10.0, 20.0]], [[0.0, 10.0, 20.0], [0.0, 0.0, 20.0], [0.0, 0.0, 0.0]], [[10.0, 20.0, 0.0], [0.0, 20.0, 0.0], [0.0, 20.0, 10.0]], [[0.0, 20.0, 10.0], [10.0, 20.0, 10.0], [10.0, 20.0, 0.0]], [[0.0, 20.0, 10.0], [0.0, 10.0, 10.0], [10.0, 10.0, 10.0]], [[10.0, 10.0, 10.0], [10.0, 20.0, 10.0], [0.0, 20.0, 10.0]], [[20.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], [[0.0, 0.0, 20.0], [20.0, 0.0, 20.0], [20.0, 0.0, 0.0]]]}, {"id": "lesson-6", "name": "2022等角図プリント④凹", "mode": "open", "text": "24 15 10 5\n0 0 0 0 20 0\n0 20 0 0 20 10\n0 20 10 0 0 10\n0 0 10 0 0 0\n0 0 0 30 0 0\n30 0 0 30 20 0\n30 20 0 20 20 0\n20 20 0 20 10 0\n20 10 0 10 10 0\n10 10 0 10 20 0\n10 20 0 0 20 0\n0 20 10 10 20 10\n10 20 10 10 10 10\n10 10 10 20 10 10\n20 10 10 20 20 10\n20 20 10 30 20 10\n30 20 10 30 0 10\n30 0 10 30 0 0\n30 0 10 0 0 10\n10 20 10 10 20 0\n10 10 0 10 10 10\n20 20 10 20 20 0\n30 20 0 30 20 10\n20 10 10 20 10 0\n", "faces": [[[0.0, 0.0, 10.0], [0.0, 0.0, 0.0], [0.0, 20.0, 0.0]], [[0.0, 20.0, 0.0], [0.0, 20.0, 10.0], [0.0, 0.0, 10.0]], [[10.0, 10.0, 10.0], [10.0, 20.0, 10.0], [0.0, 20.0, 10.0]], [[10.0, 10.0, 10.0], [0.0, 20.0, 10.0], [0.0, 0.0, 10.0]], [[20.0, 10.0, 10.0], [10.0, 10.0, 10.0], [0.0, 0.0, 10.0]], [[20.0, 10.0, 10.0], [0.0, 0.0, 10.0], [30.0, 0.0, 10.0]], [[20.0, 10.0, 10.0], [30.0, 0.0, 10.0], [30.0, 20.0, 10.0]], [[30.0, 20.0, 10.0], [20.0, 20.0, 10.0], [20.0, 10.0, 10.0]], [[0.0, 20.0, 0.0], [0.0, 20.0, 10.0], [10.0, 20.0, 10.0]], [[10.0, 20.0, 10.0], [10.0, 20.0, 0.0], [0.0, 20.0, 0.0]], [[30.0, 20.0, 0.0], [20.0, 20.0, 0.0], [20.0, 20.0, 10.0]], [[20.0, 20.0, 10.0], [30.0, 20.0, 10.0], [30.0, 20.0, 0.0]], [[10.0, 10.0, 10.0], [10.0, 10.0, 0.0], [10.0, 20.0, 0.0]], [[10.0, 20.0, 0.0], [10.0, 20.0, 10.0], [10.0, 10.0, 10.0]], [[20.0, 10.0, 0.0], [10.0, 10.0, 0.0], [10.0, 10.0, 10.0]], [[10.0, 10.0, 10.0], [20.0, 10.0, 10.0], [20.0, 10.0, 0.0]], [[10.0, 10.0, 0.0], [10.0, 20.0, 0.0], [0.0, 20.0, 0.0]], [[10.0, 10.0, 0.0], [0.0, 20.0, 0.0], [0.0, 0.0, 0.0]], [[20.0, 10.0, 0.0], [10.0, 10.0, 0.0], [0.0, 0.0, 0.0]], [[20.0, 10.0, 0.0], [0.0, 0.0, 0.0], [30.0, 0.0, 0.0]], [[20.0, 10.0, 0.0], [30.0, 0.0, 0.0], [30.0, 20.0, 0.0]], [[30.0, 20.0, 0.0], [20.0, 20.0, 0.0], [20.0, 10.0, 0.0]], [[30.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 10.0]], [[0.0, 0.0, 10.0], [30.0, 0.0, 10.0], [30.0, 0.0, 0.0]], [[30.0, 0.0, 0.0], [30.0, 20.0, 0.0], [30.0, 20.0, 10.0]], [[30.0, 20.0, 10.0], [30.0, 0.0, 10.0], [30.0, 0.0, 0.0]], [[20.0, 10.0, 0.0], [20.0, 20.0, 0.0], [20.0, 20.0, 10.0]], [[20.0, 20.0, 10.0], [20.0, 10.0, 10.0], [20.0, 10.0, 0.0]]]}, {"id": "lesson-3", "name": "2022等角図を見て正投影図に①", "mode": "iso", "text": "21 30.0 20.0 15.0\n0 0 0 60 0 0\n60 0 0 60 40 0\n60 40 0 50 40 0\n50 40 0 30 20 0\n30 20 0 10 40 0\n10 40 0 0 40 0\n0 40 0 0 0 0\n0 0 0 0 0 30\n0 0 30 0 40 30\n0 40 30 0 40 0\n0 40 30 10 40 30\n10 40 30 30 20 30\n30 20 30 50 40 30\n50 40 30 60 40 30\n60 40 30 60 0 30\n60 0 30 60 0 0\n60 40 0 60 40 30\n50 40 30 50 40 0\n0 0 30 60 0 30\n10 40 0 10 40 30\n30 20 30 30 20 0\n", "faces": [[[60.0, 40.0, 0.0], [50.0, 40.0, 0.0], [50.0, 40.0, 30.0]], [[50.0, 40.0, 30.0], [60.0, 40.0, 30.0], [60.0, 40.0, 0.0]], [[0.0, 40.0, 0.0], [0.0, 40.0, 30.0], [10.0, 40.0, 30.0]], [[10.0, 40.0, 30.0], [10.0, 40.0, 0.0], [0.0, 40.0, 0.0]], [[60.0, 0.0, 0.0], [60.0, 40.0, 0.0], [50.0, 40.0, 0.0]], [[60.0, 0.0, 0.0], [50.0, 40.0, 0.0], [30.0, 20.0, 0.0]], [[0.0, 0.0, 0.0], [60.0, 0.0, 0.0], [30.0, 20.0, 0.0]], [[0.0, 0.0, 0.0], [30.0, 20.0, 0.0], [10.0, 40.0, 0.0]], [[10.0, 40.0, 0.0], [0.0, 40.0, 0.0], [0.0, 0.0, 0.0]], [[10.0, 40.0, 0.0], [10.0, 40.0, 30.0], [30.0, 20.0, 30.0]], [[30.0, 20.0, 30.0], [30.0, 20.0, 0.0], [10.0, 40.0, 0.0]], [[30.0, 20.0, 0.0], [50.0, 40.0, 0.0], [50.0, 40.0, 30.0]], [[50.0, 40.0, 30.0], [30.0, 20.0, 30.0], [30.0, 20.0, 0.0]], [[60.0, 0.0, 0.0], [60.0, 40.0, 0.0], [60.0, 40.0, 30.0]], [[60.0, 40.0, 30.0], [60.0, 0.0, 30.0], [60.0, 0.0, 0.0]], [[60.0, 0.0, 30.0], [60.0, 40.0, 30.0], [50.0, 40.0, 30.0]], [[60.0, 0.0, 30.0], [50.0, 40.0, 30.0], [30.0, 20.0, 30.0]], [[0.0, 0.0, 30.0], [60.0, 0.0, 30.0], [30.0, 20.0, 30.0]], [[0.0, 40.0, 30.0], [0.0, 0.0, 30.0], [30.0, 20.0, 30.0]], [[30.0, 20.0, 30.0], [10.0, 40.0, 30.0], [0.0, 40.0, 30.0]], [[0.0, 0.0, 30.0], [0.0, 0.0, 0.0], [0.0, 40.0, 0.0]], [[0.0, 40.0, 0.0], [0.0, 40.0, 30.0], [0.0, 0.0, 30.0]], [[60.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 30.0]], [[0.0, 0.0, 30.0], [60.0, 0.0, 30.0], [60.0, 0.0, 0.0]]]}, {"id": "lesson-4", "name": "2022等角図を見て正投影図に②", "mode": "iso", "text": "22 35.0 20.0 20.0\n0 0 0 0 20 0\n0 20 0 30 40 0\n30 40 0 70 20 0\n70 20 0 70 0 0\n70 0 0 0 0 0\n0 20 0 0 20 40\n0 20 40 0 0 40\n0 0 40 20 0 40\n20 0 40 20 20 40\n20 20 40 20 20 20\n20 20 20 0 20 20\n0 20 40 20 20 40\n0 0 0 0 0 40\n20 0 40 20 0 20\n20 0 20 70 0 20\n70 0 20 70 0 0\n70 20 0 70 20 20\n70 20 20 70 0 20\n70 20 20 30 40 20\n30 40 20 0 20 20\n30 40 20 30 40 0\n20 0 20 20 20 20\n", "faces": [[[0.0, 20.0, 0.0], [30.0, 40.0, 0.0], [30.0, 40.0, 20.0]], [[30.0, 40.0, 20.0], [0.0, 20.0, 20.0], [0.0, 20.0, 0.0]], [[30.0, 40.0, 20.0], [0.0, 20.0, 20.0], [20.0, 20.0, 20.0]], [[30.0, 40.0, 20.0], [20.0, 20.0, 20.0], [20.0, 0.0, 20.0]], [[30.0, 40.0, 20.0], [20.0, 0.0, 20.0], [70.0, 0.0, 20.0]], [[70.0, 0.0, 20.0], [70.0, 20.0, 20.0], [30.0, 40.0, 20.0]], [[20.0, 20.0, 20.0], [0.0, 20.0, 20.0], [0.0, 20.0, 40.0]], [[0.0, 20.0, 40.0], [20.0, 20.0, 40.0], [20.0, 20.0, 20.0]], [[0.0, 20.0, 40.0], [0.0, 0.0, 40.0], [20.0, 0.0, 40.0]], [[20.0, 0.0, 40.0], [20.0, 20.0, 40.0], [0.0, 20.0, 40.0]], [[0.0, 20.0, 0.0], [0.0, 20.0, 40.0], [0.0, 0.0, 40.0]], [[0.0, 0.0, 40.0], [0.0, 0.0, 0.0], [0.0, 20.0, 0.0]], [[20.0, 0.0, 40.0], [20.0, 0.0, 20.0], [20.0, 20.0, 20.0]], [[20.0, 20.0, 20.0], [20.0, 20.0, 40.0], [20.0, 0.0, 40.0]], [[70.0, 20.0, 0.0], [30.0, 40.0, 0.0], [30.0, 40.0, 20.0]], [[30.0, 40.0, 20.0], [70.0, 20.0, 20.0], [70.0, 20.0, 0.0]], [[0.0, 0.0, 0.0], [0.0, 0.0, 40.0], [20.0, 0.0, 40.0]], [[0.0, 0.0, 0.0], [20.0, 0.0, 40.0], [20.0, 0.0, 20.0]], [[0.0, 0.0, 0.0], [20.0, 0.0, 20.0], [70.0, 0.0, 20.0]], [[70.0, 0.0, 20.0], [70.0, 0.0, 0.0], [0.0, 0.0, 0.0]], [[0.0, 20.0, 0.0], [0.0, 0.0, 0.0], [70.0, 0.0, 0.0]], [[0.0, 20.0, 0.0], [70.0, 0.0, 0.0], [70.0, 20.0, 0.0]], [[70.0, 20.0, 0.0], [30.0, 40.0, 0.0], [0.0, 20.0, 0.0]], [[70.0, 0.0, 0.0], [70.0, 20.0, 0.0], [70.0, 20.0, 20.0]], [[70.0, 20.0, 20.0], [70.0, 0.0, 20.0], [70.0, 0.0, 0.0]]]}, {"id": "lesson-1", "name": "2022正投影図から等角図へ①", "mode": "ortho", "text": "18 20 20 20\n0 0 0 40 0 0\n40 0 0 40 40 0\n40 40 0 0 40 0\n0 40 0 0 0 0\n0 0 0 0 0 20\n0 0 20 0 0 40\n0 0 40 40 0 40\n40 0 40 40 0 0\n40 0 20 40 40 20\n40 40 20 40 40 0\n40 40 20 0 40 20\n0 40 20 0 40 0\n0 0 40 20 40 40\n20 40 40 20 40 20\n20 40 40 40 0 40\n40 0 20 20 40 20\n20 40 20 0 0 20\n0 0 20 0 40 20\n", "faces": [[[0.0, 0.0, 0.0], [40.0, 0.0, 0.0], [40.0, 40.0, 0.0]], [[40.0, 40.0, 0.0], [0.0, 40.0, 0.0], [0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0], [0.0, 40.0, 0.0], [0.0, 40.0, 20.0]], [[0.0, 40.0, 20.0], [0.0, 0.0, 20.0], [0.0, 0.0, 0.0]], [[40.0, 40.0, 0.0], [0.0, 40.0, 0.0], [0.0, 40.0, 20.0]], [[0.0, 40.0, 20.0], [40.0, 40.0, 20.0], [40.0, 40.0, 0.0]], [[40.0, 0.0, 20.0], [40.0, 40.0, 20.0], [20.0, 40.0, 20.0]], [[0.0, 0.0, 20.0], [20.0, 40.0, 20.0], [0.0, 40.0, 20.0]], [[40.0, 0.0, 20.0], [40.0, 0.0, 0.0], [40.0, 40.0, 0.0]], [[40.0, 40.0, 0.0], [40.0, 40.0, 20.0], [40.0, 0.0, 20.0]], [[40.0, 0.0, 20.0], [20.0, 40.0, 20.0], [20.0, 40.0, 40.0]], [[20.0, 40.0, 40.0], [40.0, 0.0, 40.0], [40.0, 0.0, 20.0]], [[40.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 40.0]], [[0.0, 0.0, 40.0], [40.0, 0.0, 40.0], [40.0, 0.0, 0.0]], [[0.0, 0.0, 40.0], [40.0, 0.0, 40.0], [20.0, 40.0, 40.0]], [[0.0, 0.0, 20.0], [20.0, 40.0, 20.0], [20.0, 40.0, 40.0]], [[20.0, 40.0, 40.0], [0.0, 0.0, 40.0], [0.0, 0.0, 20.0]]]}, {"id": "lesson-2", "name": "2022正投影図から等角図へ②", "mode": "ortho", "text": "23 30 20 20\n0 0 0 0 0 40\n0 0 40 60 0 40\n60 0 40 60 0 0\n60 0 0 0 0 0\n0 0 0 0 20 0\n0 20 0 0 40 40\n0 40 40 0 0 40\n0 40 40 20 40 40\n20 40 40 20 20 0\n20 20 0 0 20 0\n20 20 0 20 20 40\n20 20 40 20 40 40\n20 20 40 40 20 40\n40 20 40 40 20 0\n40 20 0 20 20 0\n40 20 0 40 40 0\n40 40 0 40 20 40\n40 20 40 60 20 40\n60 20 0 60 40 0\n60 40 0 60 20 40\n40 40 0 60 40 0\n60 40 0 60 0 0\n60 0 40 60 20 40\n", "faces": [[[40.0, 20.0, 0.0], [20.0, 20.0, 0.0], [20.0, 20.0, 40.0]], [[20.0, 20.0, 40.0], [40.0, 20.0, 40.0], [40.0, 20.0, 0.0]], [[0.0, 20.0, 0.0], [0.0, 40.0, 40.0], [20.0, 40.0, 40.0]], [[20.0, 40.0, 40.0], [20.0, 20.0, 0.0], [0.0, 20.0, 0.0]], [[20.0, 20.0, 0.0], [20.0, 40.0, 40.0], [20.0, 20.0, 40.0]], [[20.0, 20.0, 40.0], [20.0, 40.0, 40.0], [0.0, 40.0, 40.0]], [[20.0, 20.0, 40.0], [0.0, 40.0, 40.0], [0.0, 0.0, 40.0]], [[60.0, 20.0, 40.0], [20.0, 20.0, 40.0], [0.0, 0.0, 40.0]], [[0.0, 0.0, 40.0], [60.0, 0.0, 40.0], [60.0, 20.0, 40.0]], [[0.0, 0.0, 40.0], [0.0, 0.0, 0.0], [0.0, 20.0, 0.0]], [[0.0, 20.0, 0.0], [0.0, 40.0, 40.0], [0.0, 0.0, 40.0]], [[60.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 40.0]], [[0.0, 0.0, 40.0], [60.0, 0.0, 40.0], [60.0, 0.0, 0.0]], [[60.0, 0.0, 0.0], [60.0, 40.0, 0.0], [40.0, 40.0, 0.0]], [[60.0, 0.0, 0.0], [40.0, 40.0, 0.0], [40.0, 20.0, 0.0]], [[0.0, 0.0, 0.0], [60.0, 0.0, 0.0], [40.0, 20.0, 0.0]], [[40.0, 20.0, 0.0], [0.0, 20.0, 0.0], [0.0, 0.0, 0.0]], [[40.0, 20.0, 40.0], [60.0, 20.0, 40.0], [60.0, 40.0, 0.0]], [[60.0, 40.0, 0.0], [40.0, 40.0, 0.0], [40.0, 20.0, 40.0]], [[40.0, 20.0, 0.0], [40.0, 40.0, 0.0], [40.0, 20.0, 40.0]], [[60.0, 0.0, 40.0], [60.0, 0.0, 0.0], [60.0, 40.0, 0.0]], [[60.0, 40.0, 0.0], [60.0, 20.0, 40.0], [60.0, 0.0, 40.0]]]}];
+var activeLesson=null,lessonTeacherUnlocked=false;
+function lessonIsRestricted(){return !!activeLesson&&activeLesson.mode!=='open'&&!lessonTeacherUnlocked;}
+function setupLessonControls(){
+  const select=$('lessonSelect');
+  $('lessonHeading').addEventListener('dblclick',e=>{if(activeLesson){e.preventDefault();toggleLessonTeacher();}});
+  for(const item of LESSON_LIBRARY){
+    const option=document.createElement('option');option.value=item.id;
+    option.textContent=item.name.replace(/^2022/,'')+(item.mode==='ortho'?'【三面図のみ】':item.mode==='open'?'【等角図で開始・4面切替可】':'【等角図のみ】');select.appendChild(option);
+  }
+  const freeOption=document.createElement('option');freeOption.value='';freeOption.textContent='自由練習（別の立体に切り替え）';select.appendChild(freeOption);
+  select.addEventListener('change',()=>{
+    const item=LESSON_LIBRARY.find(x=>x.id===select.value)||null;
+    confirmBeforeLoadingNewModel(()=>selectLesson(item),()=>{select.value=activeLesson?activeLesson.id:'';});
+  });
+  // Capture before the normal keyboard shortcuts, including when a control is focused.
+  window.addEventListener('keydown',e=>{
+    if(e.ctrlKey&&!e.altKey&&!e.shiftKey&&!e.metaKey&&e.code==='KeyT'){
+      if(activeLesson&&!e.repeat&&!e.isComposing){e.preventDefault();e.stopImmediatePropagation();toggleLessonTeacher();}return;
+    }
+    if(!lessonIsRestricted()||isTextEntryTarget(e.target))return;
+    const key=String(e.key||'').toLowerCase();
+    if(['1','2','3','4','d','f','h','m','n','x','y','z','o','enter','delete','backspace','arrowup','arrowdown','arrowleft','arrowright'].includes(key)){
+      e.preventDefault();e.stopImmediatePropagation();
+    }
+  },true);
+  updateLessonControls();
+}
+function selectLesson(item){
+  // Loading a lesson always revokes a previous teacher reveal.
+  activeLesson=item;lessonTeacherUnlocked=false;keys.clear();shift=false;
+  inverted=true;moving=false;stopTouchInertia();mouseRotateGesture=null;touchPointers.clear();touchGesture=null;
+  loadGri(item?item.text:createSampleGri(),item?item.name+'.gri':'自由練習.gri',{preserveView:true});
+  showStlSurface=true;
+  four=!item||item.mode==='ortho';lon=Math.PI/4;lat=ISO_LAT;viewName.textContent=item?(item.mode==='ortho'?'三面図':'等角図'):'自由視点';
+  clearPreservedFourFreeView();syncViewModeClass();fit();updateColor(true);updateLessonControls();markRenderDirty();
+}
+function toggleLessonTeacher(){
+  if(!activeLesson)return;
+  if(lessonTeacherUnlocked){selectLesson(activeLesson);return;}
+  lessonTeacherUnlocked=!lessonTeacherUnlocked;keys.clear();moving=false;stopTouchInertia();mouseRotateGesture=null;touchPointers.clear();touchGesture=null;
+  four=lessonTeacherUnlocked||activeLesson.mode==='ortho';lon=Math.PI/4;lat=ISO_LAT;
+  clearPreservedFourFreeView();syncViewModeClass();fit();updateLessonControls();markRenderDirty();
+}
+function updateLessonControls(){
+  const locked=lessonIsRestricted();
+  $('lessonSelect').value=activeLesson?activeLesson.id:'';
+  $('lessonStatus').textContent=!activeLesson?'自由練習：すべての表示が使えます。':activeLesson.mode==='open'?'教材：等角図で開始。1面／4面表示を切り替えられます。':lessonTeacherUnlocked?'先生確認中：両方の図を表示できます。':activeLesson.mode==='ortho'?'出題中：三面図を見て、等角図を紙にかこう。':'出題中：等角図を見て、正投影図を紙にかこう。';
+  for(const id of ['learningReset','viewModeButton','saveGriButton','exportStlFromGriButton','embeddedStlButton','embeddedStlSelect','infoDrawingModeButton'])$(id).disabled=locked;
+  for(const button of document.querySelectorAll('[data-info-action]')){
+    if(['top','front','right','iso','drawing-mode','load-model','clear-model','export-gri-stl'].includes(button.dataset.infoAction))button.disabled=locked;
+  }
+  viewModeButton.textContent=four?'１面モードにする':'４面モードにする';
+}
+function attachLessonSurface(text){
+  const geometryKey=value=>String(value).split(/\r?\n/).slice(1).map(line=>line.trim().split(/\s+/).map(Number)).filter(row=>row.length===6&&row.every(Number.isFinite)).map(row=>row.map(n=>Math.round(n*1e6)/1e6).join(',')).join(';');
+  const key=geometryKey(text);
+  const source=LESSON_LIBRARY.find(item=>item.text===text||geometryKey(item.text)===key);
+  if(!source||!source.faces)return;
+  model.triangles=[];
+  for(const face of source.faces){
+    const points=face.map(p=>modelPoint(v(...p)));
+    for(let i=1;i<points.length-1;i++)model.triangles.push({a:points[0],b:points[i],c:points[i+1]});
+  }
+  model.griSurface=true;
+  showStlSurface=true;
+  model.surfaceEdgeCache={solid:model.edges.map(edge=>({...edge,key:edgeVisibilityKey(edge.a,edge.b),fromSmoothSilhouette:false})),smooth:[]};
+}
+function canToggleHiddenLines(){return !!(model&&(model.sourceType==='stl'||model.griSurface));}
+function lessonViewAllowed(lo,la){
+  if(!lessonIsRestricted())return true;
+  const close=(a,b)=>Math.abs(normalizeAngle(a-b))<1e-7;
+  if(activeLesson.mode==='iso')return close(lo,Math.PI/4)&&close(la,ISO_LAT);
+  return [views.front,views.right,views.top].some(view=>close(lo,view[1])&&close(la,view[2]));
+}
+function drawLesson(exporting=false){
+  const render=(view,r)=>{
+    if(exporting)drawPngExportView(view[1],view[2],r);
+    else drawView(view[1],view[2],r,view[0],false,inverted);
+  };
+  ctx.fillStyle=exporting||!inverted?'#fff':'#000';ctx.fillRect(0,0,canvas.width,canvas.height);
+  if(activeLesson.mode==='iso')render(views.iso,{x:0,y:0,w:canvas.width,h:canvas.height});
+  else{
+    for(const [label,view,x,y,w,h] of layout){
+      if(view)render(view,{x:x*canvas.width,y:y*canvas.height,w:w*canvas.width,h:h*canvas.height});
+    }
+    ctx.save();ctx.fillStyle=exporting||!inverted?'#555':'#bbb';ctx.font=`${15*dpr()}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('等角図を紙にかこう',canvas.width*.75,canvas.height*.25);ctx.restore();
+  }
+}
+
+/* Chromebook classroom measurement overlays. Raw GRI/STL coordinates are millimetres. */
+var learningGridEnabled=true, learningDimensionMode='none';
+function setupLearningControls(){
+  $('displaySizeControls').addEventListener('pointerdown',e=>e.stopPropagation());
+  $('displaySizeMinus').addEventListener('click',e=>{e.stopPropagation();changeZoom(1/1.2-1);});
+  $('displaySizePlus').addEventListener('click',e=>{e.stopPropagation();changeZoom(.2);});
+  viewModeButton.textContent=four?'１面モードにする':'４面モードにする';
+  $('learningGrid').addEventListener('change',e=>{learningGridEnabled=e.target.checked;markRenderDirty();});
+  $('learningDimensions').addEventListener('change',e=>{learningDimensionMode=e.target.value;markRenderDirty();});
+  $('learningReset').addEventListener('click',()=>{if(lessonIsRestricted())return;four=true;viewModeButton.textContent='１面モードにする';lon=Math.PI/4;lat=ISO_LAT;moving=false;clearPreservedFourFreeView();syncViewModeClass();fit();markRenderDirty();});
+}
+function learningScale(){return learningDimensionMode==='none'?1:.70;}
+function learningBounds(){
+  if(!model||(!(model.edges||[]).length&&!(model.triangles||[]).length))return null;
+  return {min:model.min,max:model.max};
+}
+function learningProject(p,b,s,cx,cy){return proj(modelPoint(p),b,s,cx,cy);}
+function learningAxisVector(axis){return {x:axis==='x'?1:0,y:axis==='y'?1:0,z:axis==='z'?1:0};}
+function drawLearningGrid(b,s,cx,cy,dark){
+  const bounds=learningBounds();if(!learningGridEnabled||!bounds)return;
+  const unit=s*(model.scale||1),dp=dpr();
+  // Hide subpixel guides rather than drawing an unreadable moire on large imports.
+  if(unit*5<3*dp)return;
+  ctx.save();ctx.lineWidth=dp;ctx.setLineDash([2*dp,4*dp]);
+  for(const pair of [['x','y'],['x','z'],['y','z']]){
+    const [a,c]=pair,normal=['x','y','z'].find(k=>!pair.includes(k));
+    if(Math.abs(dot(learningAxisVector(normal),b.forward||cross(b.right,b.up)))<.15)continue;
+    for(const [stepAxis,lineAxis] of [[a,c],[c,a]]){
+      const start=Math.ceil(bounds.min[stepAxis]/5)*5,end=bounds.max[stepAxis];
+      if((end-start)/5>400)continue;
+      for(let value=start;value<=end+1e-7;value+=5){
+        const p={...bounds.min},q={...bounds.min};p[stepAxis]=q[stepAxis]=value;q[lineAxis]=bounds.max[lineAxis];
+        const u=learningProject(p,b,s,cx,cy),w=learningProject(q,b,s,cx,cy);
+        const major=Math.abs(value/10-Math.round(value/10))<1e-6;
+        ctx.strokeStyle=major?(dark?'#c58940':'#b56512'):(dark?'#377d91':'#4699b0');
+        ctx.globalAlpha=major?.7:.5;ctx.beginPath();ctx.moveTo(u.x,u.y);ctx.lineTo(w.x,w.y);ctx.stroke();
+      }
+    }
+  }
+  ctx.restore();
+}
+function learningLevels(axis,bounds){
+  const values=[bounds.min[axis],bounds.max[axis]],scale=model.scale||1;
+  // Only actual wireframe / crease vertices contribute; no tessellation diagonals.
+  const edges=(model.edges||[]).length?model.edges:(model.surfaceEdgeCache?.solid||[]);
+  if(Array.isArray(edges))for(const e of edges){if(e.a&&e.b){values.push(e.a[axis]/scale+model.center[axis],e.b[axis]/scale+model.center[axis]);}}
+  const levels=[...new Set(values.map(n=>Math.round(n*1000)/1000))].sort((a,b)=>a-b);
+  return levels.length<=8?levels:[bounds.min[axis],bounds.max[axis]];
+}
+function learningFormat(n){return String(Math.round(n*100)/100);}
+function drawLearningDimensions(b,s,cx,cy,lo,la,dark){
+  const bounds=learningBounds();if(!bounds||learningDimensionMode==='none')return;
+  const aligned=Math.max(...['x','y','z'].map(k=>Math.abs(dot(learningAxisVector(k),cross(b.right,b.up)))))>1-1e-5;
+  if(learningDimensionMode==='ortho'&&!aligned||learningDimensionMode==='iso'&&aligned)return;
+  const dp=dpr();ctx.save();ctx.setLineDash([]);ctx.lineWidth=dp;ctx.strokeStyle=ctx.fillStyle=dark?'#f8fafc':'#17212c';ctx.font=`${12*dp}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+  for(const axis of ['x','y','z']){
+    if(bounds.max[axis]-bounds.min[axis]<1e-6)continue;
+    const vector=learningAxisVector(axis);if(Math.hypot(dot(vector,b.right),dot(vector,b.up))<.01)continue;
+    // Pick the bounding-box edge furthest from the centre along its outward normal.
+    const others=['x','y','z'].filter(k=>k!==axis);let best=null;
+    for(const i of [0,1])for(const j of [0,1]){
+      const a={...bounds.min};a[others[0]]=(i?bounds.max:bounds.min)[others[0]];a[others[1]]=(j?bounds.max:bounds.min)[others[1]];
+      const z={...a,[axis]:bounds.max[axis]},p=learningProject(a,b,s,cx,cy),q=learningProject(z,b,s,cx,cy),len=Math.hypot(q.x-p.x,q.y-p.y);
+      let nx=-(q.y-p.y)/len,ny=(q.x-p.x)/len,score=nx*((p.x+q.x)/2-cx)+ny*((p.y+q.y)/2-cy);
+      if(score<0){nx=-nx;ny=-ny;score=-score;}
+      if(!best||score>best.score)best={a,z,p,q,nx,ny,score};
+    }
+    const {a,z,nx,ny}=best,levels=learningLevels(axis,bounds);
+    function dimension(from,to,offset){
+      const p=learningProject({...a,[axis]:from},b,s,cx,cy),q=learningProject({...z,[axis]:to},b,s,cx,cy);
+      // In orthographic views attach extension lines to real feature vertices.
+      const featureEdges=(model.edges||[]).length?model.edges:(model.surfaceEdgeCache?.solid||[]);
+      const featurePoint=value=>{
+        let result=null,bestScore=-Infinity;
+        for(const edge of featureEdges)for(const point of [edge.a,edge.b]){
+          if(Math.abs(point[axis]/(model.scale||1)+model.center[axis]-value)>.002)continue;
+          const projected=proj(point,b,s,cx,cy),score=projected.x*nx+projected.y*ny;
+          if(score>bestScore){bestScore=score;result=projected;}
+        }
+        return result;
+      };
+      const pFeature=aligned?(featurePoint(from)||p):p,qFeature=aligned?(featurePoint(to)||q):q;
+      const u={x:p.x+nx*offset,y:p.y+ny*offset},w={x:q.x+nx*offset,y:q.y+ny*offset};
+      ctx.beginPath();for(const [v,t] of [[pFeature,u],[qFeature,w]]){ctx.moveTo(v.x+nx*4*dp,v.y+ny*4*dp);ctx.lineTo(t.x+nx*5*dp,t.y+ny*5*dp);}ctx.moveTo(u.x,u.y);ctx.lineTo(w.x,w.y);ctx.stroke();
+      for(const t of [u,w]){ctx.beginPath();ctx.arc(t.x,t.y,2*dp,0,Math.PI*2);ctx.fill();}
+      const text=learningFormat(to-from),tx=(u.x+w.x)/2+nx*9*dp,ty=(u.y+w.y)/2+ny*9*dp,width=ctx.measureText(text).width;
+      ctx.save();ctx.fillStyle=dark?'#000':'#f4f4f4';ctx.fillRect(tx-width/2-3*dp,ty-7*dp,width+6*dp,14*dp);ctx.restore();ctx.fillText(text,tx,ty);
+    }
+    if(levels.length>2)for(let k=1;k<levels.length;k++){
+      if((levels[k]-levels[k-1])*s*(model.scale||1)>26*dp)dimension(levels[k-1],levels[k],24*dp);
+    }
+    dimension(bounds.min[axis],bounds.max[axis],(levels.length>2?52:28)*dp);
+  }
+  ctx.restore();
+}
+
+</script>
 <script>
 'use strict';
 const downloadableAppHtml='<!DOCTYPE html>\n'+document.documentElement.outerHTML;
@@ -386,7 +618,7 @@ let orthographicSnapLonEscape=0;
 let orthographicSnapLatEscape=0;
 // 緯度方向の自由回転も、北極点・南極点ちょうどまで動けるようにする。
 // viewBasis() 側で ±90度専用の基底を用意しているため、特異点でも描画できる。
-let zoom=1,lineWidth=1,inverted=true,four=false;
+let zoom=1,lineWidth=1,inverted=true,four=true;
 let preservedFourFreeView=null;
 let drawingPointer=v(0,0,0);
 let drawingStartPoint=null;
@@ -442,7 +674,7 @@ let gamepadEmbeddedStlRestoreState=null;
 let gamepadEmbeddedStlPreviewLoaded=false;
 init();
 
-function init(){showStartupTitleScreen();setupInfoToggle();setupGriButtonPanel();syncViewModeClass();configureFileInputForDevice();setupModelFileDrop();populateEmbeddedStlSelect();setupEmbeddedStlPopup();updateColor();updateHiddenLineButton();updateSurfaceButton();updateBeepButtonLabel();resize();loadEmbeddedDefaultStl();updateFileStatus(model);runSelfTests();requestAnimationFrame(loop)}
+function init(){setupLearningControls();setupLessonControls();setupInfoToggle();setupGriButtonPanel();syncViewModeClass();configureFileInputForDevice();setupModelFileDrop();populateEmbeddedStlSelect();setupEmbeddedStlPopup();updateColor();updateHiddenLineButton();updateSurfaceButton();updateBeepButtonLabel();resize();selectLesson(LESSON_LIBRARY[0]);updateFileStatus(model);runSelfTests();requestAnimationFrame(loop)}
 
 function showStartupTitleScreen(){
   const overlay=$('startupTitleOverlay');
@@ -1029,10 +1261,12 @@ function populateEmbeddedStlPopupList(){
   }
 }
 function loadGri(text,name,options={}){
+  if(lessonIsRestricted()&&text!==activeLesson.text)return;
   const preserveView=!!options.preserveView;
   const keepView={lon:normalizeAngle(lon),lat,eLon:normalizeAngle(eLon),eLat,zoom,four,inverted};
   stlReturnState=null;
   model=parseGri(text,name);
+  attachLessonSurface(text);
   currentModelType='gri';
   currentGriText=text;
   currentGriFileName=name;
@@ -1054,6 +1288,7 @@ function loadGri(text,name,options={}){
   }
 }
 async function saveCurrentGri(){
+  if(lessonIsRestricted())return;
   if(model&&model.sourceType==='stl'){
     fileStatus.textContent='STL表示中です。STLをGRIとしては保存しません。';
     return;
@@ -1336,6 +1571,7 @@ function buildGriFromCurrentStlSurface(){
   return {text:lines.join('\n')+'\n',edgeCount:edges.length};
 }
 function exportGriFromCurrentStl(options={}){
+  if(lessonIsRestricted())return;
   const suppressFocus=!!options.suppressFocus;
   if(!isStlModel()){
     fileStatus.textContent='STLが表示されている時だけ、ワイヤーフレームにできます。';
@@ -1452,6 +1688,7 @@ function requestRestoreOriginalStlDisplay(){
   restoreOriginalStlDisplay();
 }
 function convertCurrentModelWithMKey(){
+  if(lessonIsRestricted())return;
   if(stlReturnState&&currentModelType==='gri')return requestRestoreOriginalStlDisplay();
   // GRIからSTLを生成する機能は廃止。MキーはSTL表示中のGRI生成専用にする。
   if(isStlModel())return exportGriFromCurrentStl();
@@ -1460,6 +1697,7 @@ function convertCurrentModelWithMKey(){
 }
 
 async function exportStlFromCurrentGri(){
+  if(lessonIsRestricted())return;
   if(isStlModel()){
     fileStatus.textContent='STL表示中です。GRIからのSTL生成はできません。';
     return;
@@ -1622,6 +1860,7 @@ function fitAxesWhenEmptyDrawingMode(){
   }
 }
 function toggleDrawingMode(){
+  if(lessonIsRestricted())return;
   // GRI表示中・空データ表示中だけ、通常モードと.gri描画を切り替える。
   // STL表示中に.gri描画へ入る場合は requestEnterDrawingMode() 側で確認する。
   if(!canUseDrawingMode()){
@@ -1631,11 +1870,16 @@ function toggleDrawingMode(){
     return false;
   }
   inverted=!inverted;
+  if(!inverted&&model.griSurface){
+    // Editing uses the original wireframe; rebuild registered faces on return.
+    model.triangles=[];model.griSurface=false;delete model.surfaceEdgeCache;
+  }else if(inverted&&model.sourceType==='gri')attachLessonSurface(currentGriText);
   updateColor(true);
   fitAxesWhenEmptyDrawingMode();
   return true;
 }
 function requestEnterDrawingMode(){
+  if(lessonIsRestricted())return;
   if(!inverted)return true;
   if(isStlModel()){
     confirmEdgeIndex=-1;
@@ -1654,6 +1898,7 @@ function requestEnterDrawingMode(){
   return toggleDrawingMode();
 }
 function openClearConfirm(){
+  if(lessonIsRestricted())return;
   // Nキーによる全消去は、描画モードだけでなくSTL表示中・通常表示中でも使えるようにする。
   // 実際のファイルを削除するのではなく、画面上の読み込み済み立体データだけを空にする。
   confirmEdgeIndex=-1;
@@ -1749,10 +1994,11 @@ function clearAllEdges(){
   draw();
 }
 
-function draw(){ctx.fillStyle=inverted?'#000':'#f4f4f4';ctx.fillRect(0,0,canvas.width,canvas.height);four?drawFour():drawView(lon,lat,{x:0,y:0,w:canvas.width,h:canvas.height},null,true,inverted)}
+function draw(){if(lessonIsRestricted()){drawLesson();return;}ctx.fillStyle=inverted?'#000':'#f4f4f4';ctx.fillRect(0,0,canvas.width,canvas.height);four?drawFour():drawView(lon,lat,{x:0,y:0,w:canvas.width,h:canvas.height},null,true,inverted)}
 function drawFour(){layout.forEach(([label,view,x,y,w,h])=>{const viewInverted=inverted;drawView(view?view[1]:lon,view?view[2]:lat,{x:x*canvas.width,y:y*canvas.height,w:w*canvas.width,h:h*canvas.height},label,!view,viewInverted)});ctx.strokeStyle=inverted?'#555':'#bbb';ctx.lineWidth=dpr();ctx.beginPath();ctx.moveTo(canvas.width/2,0);ctx.lineTo(canvas.width/2,canvas.height);ctx.moveTo(0,canvas.height/2);ctx.lineTo(canvas.width,canvas.height/2);ctx.stroke()}
 function drawView(lo,la,r,label,axis,viewInverted=inverted){
-  const basis=viewBasis(lo,la),scale=(r.h/5.2)*zoom,cx=r.x+r.w/2,cy=r.y+r.h/2;
+  if(!lessonViewAllowed(lo,la))return;
+  const basis=viewBasis(lo,la),scale=(r.h/5.2)*zoom*learningScale(),cx=r.x+r.w/2,cy=r.y+r.h/2;
   const previousViewClipRect=activeViewClipRect;
   activeViewClipRect=r;
   ctx.save();
@@ -1764,7 +2010,8 @@ function drawView(lo,la,r,label,axis,viewInverted=inverted){
 
   if(!viewInverted)originAxes(basis,scale,cx,cy);
   if(model.triangles&&model.triangles.length)drawSurfaceTriangles(basis,scale,cx,cy,viewInverted);
-  if(model.edges&&model.edges.length){
+  drawLearningGrid(basis,scale,cx,cy,viewInverted);
+  if(model.edges&&model.edges.length&&!model.griSurface){
     ctx.strokeStyle=viewInverted?'#fff':'#111';
     ctx.lineWidth=lineWidth*dpr();
     ctx.lineCap='round';
@@ -1780,6 +2027,7 @@ function drawView(lo,la,r,label,axis,viewInverted=inverted){
   if(!viewInverted&&axis)drawHoveredEdge(basis,scale,cx,cy);
   if(!viewInverted&&(!model.triangles||!model.triangles.length))drawPreviewEdge(basis,scale,cx,cy);
   if(!viewInverted&&(!model.triangles||!model.triangles.length))drawPointer(basis,scale,cx,cy,r);
+  drawLearningDimensions(basis,scale,cx,cy,lo,la,viewInverted);
   if(label)labelBox(label,r,viewInverted);
   if(axis)axes(basis,r,viewInverted);
   ctx.restore();
@@ -2351,6 +2599,7 @@ function getLabelRect(t,r){const s=dpr();ctx.save();ctx.font=`${14*s}px sans-ser
 function fourLabelRect(t,r){return getLabelRect(t,r)}
 function getFourLabelHit(clientX,clientY){if(!four)return null;const p=clientToCanvasPoint(clientX,clientY);for(const [label,view,x,y,w,h] of layout){const rect=fourLabelRect(label,{x:x*canvas.width,y:y*canvas.height,w:w*canvas.width,h:h*canvas.height});if(pointInRect(p,rect))return{label,view};}return null;}
 function activateFourLabelView(hit){
+  if(lessonIsRestricted())return;
   if(!hit)return false;
 
   // ４面モードで、正面図・平面図・右側面図ラベルから１画面へ移る時だけ、
@@ -2430,7 +2679,7 @@ function shouldHideAxisGuide(b,r,axisRect){
   return rectsOverlap(expandRect(axisRect,6*s),expandRect(modelRect,4*s));
 }
 function getProjectedModelBoundsForAxisGuide(b,r){
-  const viewScale=(r.h/5.2)*zoom,cx=r.x+r.w/2,cy=r.y+r.h/2;
+  const viewScale=(r.h/5.2)*zoom*learningScale(),cx=r.x+r.w/2,cy=r.y+r.h/2;
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
   const add=p=>{
     const q=proj(p,b,viewScale,cx,cy);
@@ -2746,7 +2995,7 @@ function isPointerOnModelInFreeView(clientX,clientY){
   if(!isFreeViewTouchPoint(clientX,clientY))return false;
   const p=clientToCanvasPoint(clientX,clientY),r=getFreeViewRect();
   if(!pointInRect(p,r))return false;
-  const basis=viewBasis(lon,lat),viewScale=(r.h/5.2)*zoom,cx=r.x+r.w/2,cy=r.y+r.h/2;
+  const basis=viewBasis(lon,lat),viewScale=(r.h/5.2)*zoom*learningScale(),cx=r.x+r.w/2,cy=r.y+r.h/2;
   const threshold=Math.max(10*dpr(),lineWidth*dpr()+8*dpr());
 
   // STLなど面を持つ立体では、投影された三角形の内側を「立体上」とみなす。
@@ -2768,7 +3017,7 @@ function findEdgeNearFreeView(clientX,clientY){
   if(inverted)return -1;
   const p=clientToCanvasPoint(clientX,clientY),r=getFreeViewRect();
   if(!pointInRect(p,r))return -1;
-  const basis=viewBasis(lon,lat),scale=(r.h/5.2)*zoom,cx=r.x+r.w/2,cy=r.y+r.h/2;
+  const basis=viewBasis(lon,lat),scale=(r.h/5.2)*zoom*learningScale(),cx=r.x+r.w/2,cy=r.y+r.h/2;
   const threshold=Math.max(8*dpr(),lineWidth*dpr()+6*dpr());
   let best=-1,bestD=Infinity;
   for(let i=0;i<model.edges.length;i++){
@@ -2781,7 +3030,7 @@ function findEdgeNearFreeView(clientX,clientY){
 function getEdgeFreeViewMidpointCss(edgeIndex){
   if(edgeIndex<0||edgeIndex>=model.edges.length)return null;
   const r=getFreeViewRect();
-  const basis=viewBasis(lon,lat),scale=(r.h/5.2)*zoom,cx=r.x+r.w/2,cy=r.y+r.h/2;
+  const basis=viewBasis(lon,lat),scale=(r.h/5.2)*zoom*learningScale(),cx=r.x+r.w/2,cy=r.y+r.h/2;
   const e=model.edges[edgeIndex],a=proj(e.a,basis,scale,cx,cy),b=proj(e.b,basis,scale,cx,cy);
   const s=dpr();
   return {x:(a.x+b.x)/(2*s),y:(a.y+b.y)/(2*s)};
@@ -2866,6 +3115,7 @@ function handleCanvasRightClickFallback(e){
 }
 
 function isFreeViewTouchPoint(clientX,clientY){
+  if(lessonIsRestricted())return false;
   const r=canvas.getBoundingClientRect();
   if(clientX<r.left||clientX>r.right||clientY<r.top||clientY>r.bottom)return false;
   if(!four)return true;
@@ -2916,6 +3166,7 @@ function updateThreeFingerLineWidthGesture(now){
   if(changed)click(now);
 }
 function handleCanvasMouseRotateDown(e){
+  if(lessonIsRestricted())return;
   if(e.button!==0)return false;
   if(getFourLabelHit(e.clientX,e.clientY))return false;
 
@@ -3239,6 +3490,7 @@ function snapToOrthographicDirection(previousLon,previousLat){
 }
 
 function moveTo(view){
+  if(lessonIsRestricted())return;
   clearPreservedFourFreeView();
   clearOrthographicSnapLocks();
   soundReady();
@@ -3266,7 +3518,7 @@ function updateMove(now){
     markRenderDirty();
   }
 }
-function fit(lo=lon,la=lat){const b=viewBasis(lo,la),r=four?{w:canvas.width/2,h:canvas.height/2}:{w:canvas.width,h:canvas.height};let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;const addPoint=p=>{const x=dot(p,b.right),y=dot(p,b.up);minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y)};for(const e of (model.edges||[])){addPoint(e.a);addPoint(e.b)}for(const tri of (model.triangles||[])){addPoint(tri.a);addPoint(tri.b);addPoint(tri.c)}if(!inverted){getAxisModelPoints().forEach(addPoint);getModelMaxCornerPoints().forEach(addPoint);}if(!Number.isFinite(minX)){zoom=1;zoomStatus.textContent='表示倍率：100%（空）';return;}const base=r.h/5.2;const spanX=Math.max(Math.abs(minX),Math.abs(maxX))*2||1;const spanY=Math.max(Math.abs(minY),Math.abs(maxY))*2||1;zoom=clamp(Math.min(r.w*.82/(spanX*base),r.h*.82/(spanY*base)),getMinimumZoom(),12);zoomStatus.textContent=`表示倍率：${Math.round(zoom*100)}%（自動調整）`;}
+function fit(lo=lon,la=lat){const b=viewBasis(lo,la),r=four?{w:canvas.width/2,h:canvas.height/2}:{w:canvas.width,h:canvas.height};let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;const addPoint=p=>{const x=dot(p,b.right),y=dot(p,b.up);minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y)};for(const e of (model.edges||[])){addPoint(e.a);addPoint(e.b)}for(const tri of (model.triangles||[])){addPoint(tri.a);addPoint(tri.b);addPoint(tri.c)}if(!inverted){getAxisModelPoints().forEach(addPoint);getModelMaxCornerPoints().forEach(addPoint);}if(!Number.isFinite(minX)){zoom=1;zoomStatus.textContent='表示倍率：100%（空）';return;}const base=r.h/5.2;const spanX=Math.max(Math.abs(minX),Math.abs(maxX))*2||1;const spanY=Math.max(Math.abs(minY),Math.abs(maxY))*2||1;zoom=clamp(Math.min(r.w*(four?.82:.68)/(spanX*base),r.h*(four?.82:.50)/(spanY*base)),getMinimumZoom(),12);zoomStatus.textContent=`表示倍率：${Math.round(zoom*100)}%（自動調整）`;}
 
 function setDualshockHelpConnected(isConnected){
   if(dualshockConnectedHelp)dualshockConnectedHelp.style.display=isConnected?'block':'none';
@@ -3710,10 +3962,10 @@ function updateSurfaceButton(){if(surfaceToggleBottom)surfaceToggleBottom.textCo
 function updateBottomModeButtons(){
   const isStl=isStlModel();
   if(modeToggleBottom)modeToggleBottom.style.display='none';
-  if(hiddenLineToggleBottom)hiddenLineToggleBottom.style.display=isStl?'block':'none';
-  if(surfaceToggleBottom)surfaceToggleBottom.style.display=isStl?'block':'none';
-  if(hiddenLineKeyHelp)hiddenLineKeyHelp.style.display=isStl?'block':'none';
-  if(surfaceKeyHelp)surfaceKeyHelp.style.display=isStl?'block':'none';
+  if(hiddenLineToggleBottom)hiddenLineToggleBottom.style.display=canToggleHiddenLines()?'block':'none';
+  if(surfaceToggleBottom)surfaceToggleBottom.style.display=canToggleHiddenLines()?'block':'none';
+  if(hiddenLineKeyHelp)hiddenLineKeyHelp.style.display=canToggleHiddenLines()?'block':'none';
+  if(surfaceKeyHelp)surfaceKeyHelp.style.display=canToggleHiddenLines()?'block':'none';
   if(saveGriControls)saveGriControls.style.display='none';
   updateSaveGriButtonState();
   if(isStl&&stepControl){stepControl.style.display='none';stepControl.classList.remove('open');}
@@ -3721,8 +3973,8 @@ function updateBottomModeButtons(){
   updateHiddenLineButton();
   updateSurfaceButton();
 }
-function toggleHiddenLines(){if(!(model&&model.sourceType==='stl'))return;showHiddenLines=!showHiddenLines;stlHiddenLinesPreference=showHiddenLines;updateHiddenLineButton();markRenderDirty();click(performance.now())}
-function toggleStlSurface(){if(!(model&&model.sourceType==='stl'))return;showStlSurface=!showStlSurface;stlSurfacePreference=showStlSurface;updateSurfaceButton();markRenderDirty();click(performance.now())}
+function toggleHiddenLines(){if(!canToggleHiddenLines())return;showHiddenLines=!showHiddenLines;stlHiddenLinesPreference=showHiddenLines;updateHiddenLineButton();markRenderDirty();click(performance.now())}
+function toggleStlSurface(){if(!canToggleHiddenLines())return;showStlSurface=!showStlSurface;stlSurfacePreference=showStlSurface;updateSurfaceButton();markRenderDirty();click(performance.now())}
 function toggleBeep(){beep=!beep;beepStatus.textContent=beep?'クリック音：ON':'クリック音：OFF';updateBeepButtonLabel();}
 function soundReady(){
   try{
@@ -3814,6 +4066,7 @@ async function savePng(){
   }
 }
 function drawPngExport(){
+  if(lessonIsRestricted()){drawLesson(true);return;}
   ctx.fillStyle='#fff';
   ctx.fillRect(0,0,canvas.width,canvas.height);
   if(four){
@@ -3833,7 +4086,8 @@ function drawPngExport(){
   }
 }
 function drawPngExportView(lo,la,r){
-  const basis=viewBasis(lo,la),scale=(r.h/5.2)*zoom,cx=r.x+r.w/2,cy=r.y+r.h/2;
+  if(!lessonViewAllowed(lo,la))return;
+  const basis=viewBasis(lo,la),scale=(r.h/5.2)*zoom*learningScale(),cx=r.x+r.w/2,cy=r.y+r.h/2;
   ctx.save();
   ctx.fillStyle='#fff';
   ctx.fillRect(r.x,r.y,r.w,r.h);
@@ -3841,7 +4095,8 @@ function drawPngExportView(lo,la,r){
   ctx.rect(r.x,r.y,r.w,r.h);
   ctx.clip();
   if(model.triangles&&model.triangles.length)drawSurfaceTriangles(basis,scale,cx,cy,false);
-  if(model.edges&&model.edges.length){
+  drawLearningGrid(basis,scale,cx,cy,false);
+  if(model.edges&&model.edges.length&&!model.griSurface){
     ctx.strokeStyle='#111';
     ctx.lineWidth=lineWidth*dpr();
     ctx.lineCap='round';
@@ -3854,6 +4109,7 @@ function drawPngExportView(lo,la,r){
     }
     ctx.stroke();
   }
+  drawLearningDimensions(basis,scale,cx,cy,lo,la,false);
   ctx.restore();
 }
 function canvasToPngBlob(){
@@ -4080,6 +4336,7 @@ function populateEmbeddedStlSelect(){
   populateEmbeddedStlPopupList();
 }
 function requestLoadEmbeddedStlFromLibrary(index){
+  if(lessonIsRestricted())return;
   confirmBeforeLoadingNewModel(
     ()=>loadEmbeddedStlFromLibrary(index),
     ()=>{
@@ -4136,6 +4393,7 @@ function readSelectedArrayBufferFileByReader(file){
   });
 }
 function loadStl(buffer,name,deadline=0){
+  if(lessonIsRestricted())return;
   stlReturnState=null;
   const parsed=parseStlSurface(buffer,name,deadline);
   // STLを読み込んでも、直前の自由視点の向きは変えない。
@@ -4148,7 +4406,7 @@ function loadStl(buffer,name,deadline=0){
   model=parsed;
   currentModelType='stl';
   showHiddenLines=stlHiddenLinesPreference;
-  showStlSurface=stlSurfacePreference;
+  showStlSurface=true;
   currentGriText='';
   currentGriFileName=name;
   clearGriLineDataUnsaved();
@@ -4467,6 +4725,7 @@ canvas.addEventListener('mouseup',handleCanvasRightClickFallback);
 canvas.addEventListener('auxclick',handleCanvasRightClickFallback);
 canvas.addEventListener('wheel',handleCanvasWheel,{passive:false});
 function toggleViewMode(){
+  if(lessonIsRestricted())return;
   const enteringFour=!four;
   const preserved=preservedFourFreeView;
   four=enteringFour;
@@ -4522,10 +4781,10 @@ canvas.addEventListener('pointercancel',handleCanvasPointerEnd,{passive:false});
 
 function loop(now){
   requestAnimationFrame(loop);
-  updateGamepad();
-  updateKeys();
+  // Chromebook版ではゲームパッドをポーリングしない。
+  if(!lessonIsRestricted())updateKeys();
   updateMove(now);
-  updateTouchInertia(now);
+  if(!lessonIsRestricted())updateTouchInertia(now);
   const interactive=isInteractiveRenderActive();
   if(lastInteractiveRendering&&!interactive)markRenderDirty();
   lastInteractiveRendering=interactive;
