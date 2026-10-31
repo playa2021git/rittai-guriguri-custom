@@ -36,8 +36,8 @@ console.log('Existing self-tests:',el('testStatus').textContent);
 
 // Classroom visibility must hold at the renderer, export, and input boundaries.
 run("setupLessonControls();");
-assert.equal(run('LESSON_LIBRARY.length'),8);
-for(let i=0;i<run('LESSON_LIBRARY.length');i++){
+assert.equal(run('LESSON_LIBRARY.length'),9);
+for(let i=0;i<8;i++){
  run(`selectLesson(LESSON_LIBRARY[${i}]);`);
  assert.equal(run('lessonIsRestricted()'),run("activeLesson.mode!=='open'"));
  assert.equal(run('model.actualEdgeCount'),run('Number(LESSON_LIBRARY['+i+'].text.split(/\\s+/)[0])'));
@@ -147,7 +147,7 @@ run('toggleStlSurface();');assert.equal(run('showStlSurface'),false);
 run('selectLesson(LESSON_LIBRARY[1]);');assert.equal(run('showStlSurface'),true,'new selection restores initial face colors');
 console.log('PASS: problem 1 maximum is 40mm; problem 2 maximum is 60mm; all 8 lessons start with colored faces.');
 
-assert.equal(run('LESSON_LIBRARY.map(item=>item.id).join(",")'),'lesson-cube-20mm,lesson-7,lesson-5,lesson-6,lesson-3,lesson-4,lesson-1,lesson-2');
+assert.equal(run('LESSON_LIBRARY.map(item=>item.id).join(",")'),'lesson-cube-20mm,lesson-7,lesson-5,lesson-6,lesson-3,lesson-4,lesson-1,lesson-2,lesson-cone-hemisphere');
 run('selectLesson(LESSON_LIBRARY[0]);');assert.equal(run('activeLesson.id'),'lesson-cube-20mm');assert.equal(run('four'),false);assert.equal(run('showStlSurface'),true);assert.equal(el('lessonSelect').value,'lesson-cube-20mm');
 console.log('PASS: teaching order and initial 20mm cube selection.');
 
@@ -165,3 +165,13 @@ assert.equal(run("learningLevels('x',learningBounds()).join(',')"),'0,5,15,25,30
 assert.equal(run("learningLevels('y',learningBounds()).join(',')"),'0,10,20');
 console.log('PASS: isometric-to-orthographic problem 1 is 30 x 20 x 15mm, 5mm rails and 10mm valley drop.');
 
+
+run("selectLesson(LESSON_LIBRARY.find(item=>item.id==='lesson-cone-hemisphere'));");
+for(const [axis,size] of [['x',140],['y',170],['z',140]])assert.equal(run(`model.max.${axis}-model.min.${axis}`),size);
+assert.equal(run('lessonIsRestricted()'),false);
+assert(run('model.surfaceEdgeCache.smooth.length>0'),'curved silhouettes enabled');
+assert(run('model.surfaceEdgeCache.solid.length>0'),'circular rims retained');
+assert(run('model.triangles.length===4992'));
+run('draw();drawPngExport();toggleViewMode();draw();');
+assert.equal(run('four'),true);
+console.log('PASS: cone and hemisphere dimensions, curved silhouettes, rendering/export and four views.');
