@@ -150,3 +150,11 @@ console.log('PASS: problem 1 maximum is 40mm; problem 2 maximum is 60mm; all 8 l
 assert.equal(run('LESSON_LIBRARY.map(item=>item.id).join(",")'),'lesson-cube-20mm,lesson-7,lesson-5,lesson-6,lesson-3,lesson-4,lesson-1,lesson-2');
 run('selectLesson(LESSON_LIBRARY[0]);');assert.equal(run('activeLesson.id'),'lesson-cube-20mm');assert.equal(run('four'),false);assert.equal(run('showStlSurface'),true);assert.equal(el('lessonSelect').value,'lesson-cube-20mm');
 console.log('PASS: teaching order and initial 20mm cube selection.');
+
+run("selectLesson(LESSON_LIBRARY.find(item=>item.id==='lesson-4'));");
+for(const [axis,size] of [['x',35],['y',20],['z',20]])assert.equal(run(`model.max.${axis}-model.min.${axis}`),size);
+assert.equal(run("learningLevels('x',learningBounds()).join(',')"),'0,10,15,35');
+assert.equal(run("learningLevels('y',learningBounds()).join(',')"),'0,10,20');
+assert.equal(run("learningLevels('z',learningBounds()).join(',')"),'0,10,20');
+assert(run("model.triangles.length>0 && model.griSurface"));
+console.log('PASS: isometric-to-orthographic problem 2 is 35 x 20 x 20mm with a 10mm front cube.');
