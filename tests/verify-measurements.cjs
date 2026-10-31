@@ -158,3 +158,10 @@ assert.equal(run("learningLevels('y',learningBounds()).join(',')"),'0,10,20');
 assert.equal(run("learningLevels('z',learningBounds()).join(',')"),'0,10,20');
 assert(run("model.triangles.length>0 && model.griSurface"));
 console.log('PASS: isometric-to-orthographic problem 2 is 35 x 20 x 20mm with a 10mm front cube.');
+
+run("selectLesson(LESSON_LIBRARY.find(item=>item.id==='lesson-3'));");
+for(const [axis,size] of [['x',30],['y',20],['z',15]])assert.equal(run(`model.max.${axis}-model.min.${axis}`),size);
+assert.equal(run("learningLevels('x',learningBounds()).join(',')"),'0,5,15,25,30');
+assert.equal(run("learningLevels('y',learningBounds()).join(',')"),'0,10,20');
+console.log('PASS: isometric-to-orthographic problem 1 is 30 x 20 x 15mm, 5mm rails and 10mm valley drop.');
+
