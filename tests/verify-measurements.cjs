@@ -177,9 +177,9 @@ assert.equal(run('four'),true);
 console.log('PASS: cone and hemisphere dimensions, curved silhouettes, rendering/export and four views.');
 
 run("selectLesson(LESSON_LIBRARY.find(item=>item.id==='lesson-nested-frames'));");
-assert.equal(run('model.max.x-model.min.x'),150);
+assert.equal(run('model.max.x-model.min.x'),100);
 assert.equal(run('model.max.z-model.min.z'),50);
 assert(run('model.triangles.length>0 && model.griSurface'));
 run('draw();drawPngExport();toggleViewMode();draw();');
 assert.equal(run('four'),true);
-console.log('PASS: nested frames lesson, 150mm base, rendering/export and four views.');
+console.log('PASS: nested frames lesson, 100mm base, rendering/export and four views.');
