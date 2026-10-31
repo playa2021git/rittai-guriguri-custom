@@ -36,7 +36,7 @@ console.log('Existing self-tests:',el('testStatus').textContent);
 
 // Classroom visibility must hold at the renderer, export, and input boundaries.
 run("setupLessonControls();");
-assert.equal(run('LESSON_LIBRARY.length'),9);
+assert.equal(run('LESSON_LIBRARY.length'),10);
 for(let i=0;i<8;i++){
  run(`selectLesson(LESSON_LIBRARY[${i}]);`);
  assert.equal(run('lessonIsRestricted()'),run("activeLesson.mode!=='open'"));
@@ -147,7 +147,7 @@ run('toggleStlSurface();');assert.equal(run('showStlSurface'),false);
 run('selectLesson(LESSON_LIBRARY[1]);');assert.equal(run('showStlSurface'),true,'new selection restores initial face colors');
 console.log('PASS: problem 1 maximum is 40mm; problem 2 maximum is 60mm; all 8 lessons start with colored faces.');
 
-assert.equal(run('LESSON_LIBRARY.map(item=>item.id).join(",")'),'lesson-cube-20mm,lesson-7,lesson-5,lesson-6,lesson-3,lesson-4,lesson-1,lesson-2,lesson-cone-hemisphere');
+assert.equal(run('LESSON_LIBRARY.map(item=>item.id).join(",")'),'lesson-cube-20mm,lesson-7,lesson-5,lesson-6,lesson-3,lesson-4,lesson-1,lesson-2,lesson-cone-hemisphere,lesson-nested-frames');
 run('selectLesson(LESSON_LIBRARY[0]);');assert.equal(run('activeLesson.id'),'lesson-cube-20mm');assert.equal(run('four'),false);assert.equal(run('showStlSurface'),true);assert.equal(el('lessonSelect').value,'lesson-cube-20mm');
 console.log('PASS: teaching order and initial 20mm cube selection.');
 
@@ -175,3 +175,11 @@ assert(run('model.triangles.length===4992'));
 run('draw();drawPngExport();toggleViewMode();draw();');
 assert.equal(run('four'),true);
 console.log('PASS: cone and hemisphere dimensions, curved silhouettes, rendering/export and four views.');
+
+run("selectLesson(LESSON_LIBRARY.find(item=>item.id==='lesson-nested-frames'));");
+assert.equal(run('model.max.x-model.min.x'),150);
+assert.equal(run('model.max.z-model.min.z'),50);
+assert(run('model.triangles.length>0 && model.griSurface'));
+run('draw();drawPngExport();toggleViewMode();draw();');
+assert.equal(run('four'),true);
+console.log('PASS: nested frames lesson, 150mm base, rendering/export and four views.');
