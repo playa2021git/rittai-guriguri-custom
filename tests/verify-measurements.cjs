@@ -36,7 +36,7 @@ console.log('Existing self-tests:',el('testStatus').textContent);
 
 // Classroom visibility must hold at the renderer, export, and input boundaries.
 run("setupLessonControls();");
-assert.equal(run('LESSON_LIBRARY.length'),8);
+assert.equal(run('LESSON_LIBRARY.length'),9);
 for(let i=0;i<8;i++){
  run(`selectLesson(LESSON_LIBRARY[${i}]);`);
  assert.equal(run('lessonIsRestricted()'),run("activeLesson.mode!=='open'"));
@@ -147,7 +147,7 @@ run('toggleStlSurface();');assert.equal(run('showStlSurface'),false);
 run('selectLesson(LESSON_LIBRARY[1]);');assert.equal(run('showStlSurface'),true,'new selection restores initial face colors');
 console.log('PASS: problem 1 maximum is 40mm; problem 2 maximum is 60mm; all 8 lessons start with colored faces.');
 
-assert.equal(run('LESSON_LIBRARY.map(item=>item.id).join(",")'),'lesson-cube-20mm,lesson-7,lesson-5,lesson-6,lesson-3,lesson-4,lesson-1,lesson-2');
+assert.equal(run('LESSON_LIBRARY.map(item=>item.id).join(",")'),'lesson-cube-20mm,lesson-7,lesson-5,lesson-6,lesson-3,lesson-4,lesson-1,lesson-2,lesson-dengon-1');
 run('selectLesson(LESSON_LIBRARY[0]);');assert.equal(run('activeLesson.id'),'lesson-cube-20mm');assert.equal(run('four'),false);assert.equal(run('showStlSurface'),true);assert.equal(el('lessonSelect').value,'lesson-cube-20mm');
 console.log('PASS: teaching order and initial 20mm cube selection.');
 
@@ -164,3 +164,20 @@ for(const [axis,size] of [['x',30],['y',20],['z',15]])assert.equal(run(`model.ma
 assert.equal(run("learningLevels('x',learningBounds()).join(',')"),'0,5,15,25,30');
 assert.equal(run("learningLevels('y',learningBounds()).join(',')"),'0,10,20');
 console.log('PASS: isometric-to-orthographic problem 1 is 30 x 20 x 15mm, 5mm rails and 10mm valley drop.');
+
+// The uploaded STL is embedded with its original geometry and millimetre scale.
+const stlBytes=fs.readFileSync(path.join(__dirname,'..','lessons','rittai_dengon_150mm_smooth_holes.stl'));
+sandbox.uploadedStl=Uint8Array.from(stlBytes).buffer;
+run("selectLesson(LESSON_LIBRARY.find(item=>item.id==='lesson-dengon-1'));");
+assert.equal(run('activeLesson.name'),'立体伝言ゲーム①');
+for(const axis of ['x','y','z'])assert.equal(run(`model.max.${axis}-model.min.${axis}`),150);
+assert.equal(run('lessonIsRestricted()'),false);
+assert.equal(run('showStlSurface'),true);
+assert.equal(run('four'),false);
+assert.equal(run('model.triangles.length'),1302);
+assert(run('model.surfaceEdgeCache.smooth.length>0'));
+assert(run(`(()=>{const source=parseStlSurface(uploadedStl);return source.triangles.every((tri,i)=>['a','b','c'].every(key=>['x','y','z'].every(axis=>Math.abs(tri[key][axis]-model.triangles[i][key][axis])<1e-7)));})()`),'embedded mesh matches uploaded STL');
+run('draw();drawPngExport();toggleViewMode();draw();');
+assert.equal(run('four'),true);
+run('toggleHiddenLines();');assert.equal(run('showHiddenLines'),true);
+console.log('PASS: 立体伝言ゲーム① matches uploaded STL, 150mm dimensions, curved surfaces, rendering/export and four views.');
