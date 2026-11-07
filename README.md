@@ -38,6 +38,8 @@
 
 サービスのソース・保守手順は [classroom/README.md](classroom/README.md) を参照してください。
 
+GitHubだけでの運用も試験しています：[速度測定ページ](https://playa2021git.github.io/rittai-guriguri-custom/teacher-benchmark/) ／ [測定結果](teacher-benchmark/RESULTS.md)。3回のGitHub Pages経由の中央値は約46秒でした。試験専用の構成であり、本番の共有許可サービスはChatGPT Sites版のままです。
+
 ## Chromebook向け作図学習版
 
 `index.html` をChromeで開いて使います。最初は「立方体（1辺20mm）」の等角図で起動し、立体が表示エリアの高さの約半分に収まる大きさで表示します。4面表示へ自由に切り替えられます。

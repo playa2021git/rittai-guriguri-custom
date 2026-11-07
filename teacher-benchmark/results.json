@@ -1,0 +1,59 @@
+{
+  "measuredAt": "2026-11-07T08:38:55.511494+00:00",
+  "pollIntervalSeconds": 2,
+  "results": [
+    {
+      "trial": 1,
+      "probeToken": "speed-aac5fad70c494e9f",
+      "dispatchedAt": "2026-11-07T08:34:51.390288+00:00",
+      "observedSeconds": {
+        "pages_cache_busted": 46.34
+      },
+      "timeoutSeconds": 120,
+      "errors": {
+        "pages_cache_busted": "HTTP Error 404: Not Found"
+      },
+      "workflowUrl": "https://github.com/playa2021git/rittai-guriguri-custom/actions/runs/42356087718",
+      "workflowCreatedAt": "2026-11-07T08:34:51Z",
+      "jobStartedAt": "2026-11-07T08:34:54Z",
+      "jobCompletedAt": "2026-11-07T08:34:58Z"
+    },
+    {
+      "trial": 2,
+      "probeToken": "speed-f875672180b54182",
+      "dispatchedAt": "2026-11-07T08:36:53.780833+00:00",
+      "observedSeconds": {
+        "pages_cache_busted": 45.61
+      },
+      "timeoutSeconds": 120,
+      "errors": {},
+      "workflowUrl": "https://github.com/playa2021git/rittai-guriguri-custom/actions/runs/42356236167",
+      "workflowCreatedAt": "2026-11-07T08:36:52Z",
+      "jobStartedAt": "2026-11-07T08:36:57Z",
+      "jobCompletedAt": "2026-11-07T08:37:03Z"
+    },
+    {
+      "trial": 3,
+      "probeToken": "speed-8cf59a10d9384b11",
+      "dispatchedAt": "2026-11-07T08:38:55.511494+00:00",
+      "observedSeconds": {
+        "pages_cache_busted": 46.14,
+        "raw_plain": 60.16,
+        "raw_cache_busted": 60.16
+      },
+      "timeoutSeconds": 120,
+      "errors": {},
+      "workflowUrl": "https://github.com/playa2021git/rittai-guriguri-custom/actions/runs/42356369765",
+      "workflowCreatedAt": "2026-11-07T08:38:55Z",
+      "jobStartedAt": "2026-11-07T08:38:59Z",
+      "jobCompletedAt": "2026-11-07T08:39:05Z"
+    }
+  ],
+  "summary": {
+    "pagesMedianSeconds": 46.14,
+    "pagesMinSeconds": 45.61,
+    "pagesMaxSeconds": 46.34,
+    "liveClassroomChanged": false,
+    "sitesComparison": "Current application polls Sites every 5 seconds; Sites writes were not retested in this benchmark."
+  }
+}

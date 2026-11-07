@@ -43,7 +43,7 @@ def main():
                     try:
                         data=future.result()
                         if data.get('probeToken')==nonce:
-                            elapsed[name]=round(time.monotonic()-started,2);print(' ',name,elapsed[name],'seconds',flush=True)
+                            errors.pop(name,None);elapsed[name]=round(time.monotonic()-started,2);print(' ',name,elapsed[name],'seconds',flush=True)
                     except Exception as error:errors[name]=str(error)[:140]
                 if sample%5==0 or run is None:
                     listing=request(api+'/actions/workflows/'+WORKFLOW+'/runs?per_page=5',token)
