@@ -12,9 +12,9 @@ try{
  const teacherUrl='https://guriguri-teacher-control.terakadobutyo.chatgpt.site/api/state';
  const target=input.teacherToken?teacherUrl:state;
  const headers=input.teacherToken?{'OAI-Sites-Authorization':'Bearer '+input.teacherToken}:{Authorization:'Bearer '+input.writeSecret};
- const grant=await call(target,'PUT',{allowedIds:['lesson-cube-20mm','lesson-6'],revision},headers);
+ const grant=await call(target,'PUT',{allowedIds:['lesson-cube-20mm','lesson-dengon-1'],revision},headers);
  assert.equal(grant.status,200);revision=grant.data.revision;changed=true;
- const student=await call(state);assert.deepEqual(student.data.allowedIds,['lesson-cube-20mm','lesson-6']);
+ const student=await call(state);assert.deepEqual(student.data.allowedIds,['lesson-cube-20mm','lesson-dengon-1']);
  console.log('PASS: anonymous read, anonymous write rejected, teacher grant, independent student sees allowed model.');
  const reset=await call(target,'PUT',{allowedIds:original,revision},headers);assert.equal(reset.status,200);changed=false;
  const restored=await call(state);assert.deepEqual(restored.data.allowedIds,original);
