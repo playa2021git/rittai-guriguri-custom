@@ -254,7 +254,7 @@
       <select id="lessonSelect"></select>
       <p id="lessonStatus" role="status" aria-live="polite"></p>
       <p id="classroomStatus" class="small" role="status" aria-live="polite">最初は立方体だけ選べます。先生の許可を確認しています。</p>
-      <a id="classroomTeacherLink" href="https://guriguri-teacher-control.terakadobutyo.chatgpt.site/" target="_blank" rel="noopener noreferrer" style="display:none">先生：立体の許可設定を開く</a>
+      <a id="classroomTeacherLink" href="https://script.google.com/macros/s/AKfycbypD7kOXb_9Tjyz2IdFuuVJZ9Eh9_Kyx3Hfg2548gNg-D0a7ZfWE-ueRlO2RW-kyngWbg/exec?mode=teacher" target="_blank" rel="noopener noreferrer" style="display:none">先生：GASの許可設定を開く</a>
     </section>
     <section id="learningControls" aria-label="作図学習">
       <strong>紙にかくための作図学習</strong>
@@ -388,7 +388,7 @@
       <table id="externalInfoTable">
         <thead><tr><th scope="col">区分</th><th scope="col">アクセス先</th><th scope="col">通信・取得内容</th><th scope="col">ライセンス／利用条件</th></tr></thead>
         <tbody>
-          <tr><th scope="row">授業用の許可設定</th><td>guriguri-classroom-state.terakadobutyo.chatgpt.site</td><td>許可された立体ID・設定の版番号を約5秒ごとに取得します。先生は別の先生専用画面へログインし、許可を変更します。生徒の氏名やファイルは送信しません。</td><td>共有サービスはSites上で動作します。</td></tr>
+          <tr><th scope="row">授業用の許可設定</th><td>script.google.com<br>script.googleusercontent.com</td><td>許可された立体ID・設定の版番号を約5秒ごとに取得します。先生はGASを作成したGoogleアカウントで先生専用画面を開き、許可を変更します。生徒の氏名やファイルは送信しません。</td><td>共有設定はGoogle Apps Scriptで動作します。</td></tr>
           <tr><th scope="row">CDN・外部ライブラリー</th><td class="externalInfoNone">なし</td><td>外部のJavaScript、CSS、Webフォントを読み込みません。プログラムとCSSはHTML内にあり、端末のシステムフォントを使用します。</td><td>該当なし</td></tr>
           <tr><th scope="row">アプリ本体・起動画像の配信</th><td>ローカル利用時：同じフォルダ<br>公開版：<a href="https://playa2021git.github.io/rittai-guriguri-custom/" target="_blank" rel="noopener noreferrer">playa2021git.github.io</a></td><td>公開版を開いたときに、同じ公開元から <code>index.html</code> と <code>title.png</code> を取得します。ローカルファイルとして開く場合、インターネット通信はありません。</td><td>アプリの内容はCC BY 4.0。Web配信には<a href="https://docs.github.com/ja/pages/getting-started-with-github-pages/what-is-github-pages" target="_blank" rel="noopener noreferrer">GitHub Pages</a>、<a href="https://docs.github.com/ja/site-policy/github-terms/github-terms-of-service" target="_blank" rel="noopener noreferrer">GitHub利用規約</a>、<a href="https://docs.github.com/ja/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener noreferrer">プライバシー・ステートメント</a>が適用されます。</td></tr>
           <tr><th scope="row">起動用・内蔵STL</th><td class="externalInfoNone">外部アクセスなし</td><td>起動用STLと26個の内蔵STLはHTML内から読み出します。</td><td>個別の表示がないものは、アプリの配布物としてCC BY 4.0の条件に従います。</td></tr>
@@ -412,9 +412,9 @@
 </div>
 <script>
 // Shared classroom permissions. Read-only endpoint; no write credential is shipped.
-var classroomAllowedIds=['lesson-cube-20mm'],classroomRevision=-1,classroomPollTimer=null;
-const CLASSROOM_STATE_URL='https://guriguri-classroom-state.terakadobutyo.chatgpt.site/api/state';
-const CLASSROOM_TEACHER_URL='https://guriguri-teacher-control.terakadobutyo.chatgpt.site/';
+var classroomAllowedIds=['lesson-cube-20mm'],classroomRevision=-1,classroomPollTimer=null,classroomJsonpSequence=0;
+const CLASSROOM_STATE_URL='https://script.google.com/macros/s/AKfycbypD7kOXb_9Tjyz2IdFuuVJZ9Eh9_Kyx3Hfg2548gNg-D0a7ZfWE-ueRlO2RW-kyngWbg/exec?mode=api';
+const CLASSROOM_TEACHER_URL='https://script.google.com/macros/s/AKfycbypD7kOXb_9Tjyz2IdFuuVJZ9Eh9_Kyx3Hfg2548gNg-D0a7ZfWE-ueRlO2RW-kyngWbg/exec?mode=teacher';
 function classroomCanChoose(id){return classroomAllowedIds.includes(id);}
 function classroomCanUseFreePractice(){return classroomCanChoose('__free__');}
 function refreshClassroomChoices(){
@@ -443,11 +443,29 @@ function applyClassroomState(data){
  updateLessonControls();
  $('classroomStatus').textContent='先生が許可した立体：'+classroomAllowedIds.filter(id=>id!=='__free__').length+'個'+(classroomCanUseFreePractice()?' ／ 自由練習も使えます':'');
 }
+function readClassroomPermissions(){
+ return new Promise((resolve,reject)=>{
+  const callback='guriguriPermissions_'+Date.now().toString(36)+'_'+(++classroomJsonpSequence).toString(36);
+  const script=document.createElement('script');let finished=false,timer;
+  function finish(error,data){
+   if(finished)return;finished=true;clearTimeout(timer);script.remove();
+   // A slow response must not call a deleted callback after a timeout.
+   window[callback]=()=>{};setTimeout(()=>{delete window[callback];},60000);
+   if(error)reject(error);else resolve(data);
+  }
+  window[callback]=data=>finish(null,data);
+  script.onerror=()=>finish(new Error('GAS permission read failed'));
+  script.onload=()=>{if(!finished)finish(new Error('GAS returned no permission data'));};
+  script.referrerPolicy='no-referrer';
+  const url=new URL(CLASSROOM_STATE_URL);url.searchParams.set('callback',callback);url.searchParams.set('_',Date.now());script.src=url.href;
+  timer=setTimeout(()=>finish(new Error('GAS permission read timed out')),15000);
+  document.head.appendChild(script);
+ });
+}
 async function syncClassroomPermissions(){
  clearTimeout(classroomPollTimer);
  try{
-  const response=await fetch(CLASSROOM_STATE_URL,{cache:'no-store',credentials:'omit',signal:AbortSignal.timeout(4000)});
-  if(!response.ok)throw Error('classroom unavailable');applyClassroomState(await response.json());
+  applyClassroomState(await readClassroomPermissions());
  }catch{
   applyClassroomState({allowedIds:['lesson-cube-20mm'],revision:0});
   $('classroomStatus').textContent='許可設定を確認できません。立方体で練習できます。接続を再確認しています。';

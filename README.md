@@ -27,18 +27,18 @@
 
 生徒の入口は今までと同じ[公開ページ](https://playa2021git.github.io/rittai-guriguri-custom/)です。初期の許可設定は「立方体だけ」。生徒のログインや解放コードの入力は必要ありません。
 
-1. 先生は[先生用の許可設定](https://guriguri-teacher-control.terakadobutyo.chatgpt.site/)を開き、このサービスを作成した先生のChatGPTアカウントでログインします。教材の「授業用」をダブルクリックした後に表示される先生用リンクからも開けます。
+1. 先生は[先生用の許可設定](https://script.google.com/macros/s/AKfycbypD7kOXb_9Tjyz2IdFuuVJZ9Eh9_Kyx3Hfg2548gNg-D0a7ZfWE-ueRlO2RW-kyngWbg/exec?mode=teacher)を開き、GASを作成した先生のGoogleアカウントで開きます。教材の「授業用」をダブルクリックした後に表示される先生用リンクからも開けます。
 2. 許可したい立体にチェックし、「許可を反映」を押します。順番に関係なく任意の教材を選べます。「自由練習」も別に許可できます。
-3. 生徒が同じ教材ページを開いていれば、通常約5秒で選択肢が自動更新されます。先生が許可を取り消した立体を見ていた生徒は、立方体へ戻ります。
+3. 生徒が同じ教材ページを開いていれば、約5秒ごとの確認とGASの通信時間で選択肢が自動更新されます（試験時は約7秒）。先生が許可を取り消した立体を見ていた生徒は、立方体へ戻ります。
 4. 次の授業を最初から始めるときは「立方体だけに戻す」を押してください。
 
 許可設定は全クラス共通で保存されます。共有設定を読み込めないときは立方体だけに戻り、接続を再試行します。自由練習が未許可の間は、内蔵STL・ファイル読み込み・描画による教材の差し替えも制限します。既存の「等角図だけ／三面図だけ」の出題制限とは別の設定です。
 
-共有設定はSitesの公開読み取りサービス＋D1データベースに保存し、先生の変更画面は所有者だけの非公開Siteで保護しています。生徒端末に書き込み用の秘密情報は配信しません。生徒の氏名・ID・立体ファイルは送信せず、許可された立体IDと版番号だけを取得します。これは教材の表示制御であり、HTML内の立体データ自体を秘匿する仕組みではありません。
+共有設定はGoogle Apps ScriptのScript Propertiesへ保存し、先生のGoogleアカウントと登録した作成者を照合して書き込みを保護します。GitHub Pagesの生徒画面は公開の読み取り専用JSONPを利用します。APIキーやパスワードは生徒端末に配信しません。生徒の氏名・ID・立体ファイルは送信せず、許可された立体IDと版番号だけを取得します。これは教材の表示制御であり、HTML内の立体データ自体を秘匿する仕組みではありません。
 
 サービスのソース・保守手順は [classroom/README.md](classroom/README.md) を参照してください。
 
-GitHubだけでの運用も試験しています：[速度測定ページ](https://playa2021git.github.io/rittai-guriguri-custom/teacher-benchmark/) ／ [測定結果](teacher-benchmark/RESULTS.md)。3回のGitHub Pages経由の中央値は約46秒でした。試験専用の構成であり、本番の共有許可サービスはChatGPT Sites版のままです。
+GitHubだけでの運用も試験しています：[速度測定ページ](https://playa2021git.github.io/rittai-guriguri-custom/teacher-benchmark/) ／ [測定結果](teacher-benchmark/RESULTS.md)。3回のGitHub Pages経由の中央値は約46秒でした。試験専用の構成であり、共有許可にはGAS方式を採用しています。
 
 ## Chromebook向け作図学習版
 
