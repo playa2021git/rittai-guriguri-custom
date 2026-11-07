@@ -1,0 +1,52 @@
+name: Classroom permission speed test
+run-name: Permission speed test ${{ inputs.probe_token }}
+on:
+  workflow_dispatch:
+    inputs:
+      probe_token:
+        description: Measurement ID (leave empty for a manual test)
+        required: false
+        default: ''
+permissions:
+  contents: write
+  pages: write
+concurrency:
+  group: classroom-permission-speed-test
+  cancel-in-progress: false
+jobs:
+  update-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Update isolated test settings and request Pages build
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          PROBE_TOKEN: ${{ inputs.probe_token }}
+        run: |
+          python3 - <<'PY'
+          import os,json,urllib.request,urllib.error,base64,datetime,re
+          repo=os.environ['REPOSITORY']
+          token=os.environ['GH_TOKEN']
+          probe=os.environ['PROBE_TOKEN'] or os.environ['RUN_ID']
+          if not re.fullmatch(r'[A-Za-z0-9_-]{1,96}',probe):raise SystemExit('Invalid measurement ID')
+          def api(path,method='GET',body=None):
+              req=urllib.request.Request('https://api.github.com/repos/'+repo+path,method=method,headers={'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json','User-Agent':'Guriguri-Speed-Test','Content-Type':'application/json'},data=json.dumps(body).encode() if body is not None else None)
+              with urllib.request.urlopen(req,timeout=20) as response:return response.status,json.load(response)
+          path='/contents/teacher-benchmark/state.json'
+          _,old=api(path+'?ref=main')
+          state={'probeToken':probe,'runId':os.environ['RUN_ID'],'writtenAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),'notice':'Speed test only. Live classroom permissions are unchanged.'}
+          body={'message':'Update isolated permission speed probe','branch':'main','sha':old['sha'],'content':base64.b64encode((json.dumps(state)+'\n').encode()).decode()}
+          _,commit=api(path,'PUT',body)
+          print('PROBE_COMMIT',commit['commit']['sha'])
+          print('PROBE_WRITTEN_AT',state['writtenAt'])
+          # GITHUB_TOKEN commits do not automatically rebuild a branch-based
+          # Pages site, so request that build explicitly for the Pages comparison.
+          try:
+              status,_=api('/pages/builds','POST',{})
+              print('PAGES_BUILD_REQUEST',status)
+          except urllib.error.HTTPError as error:
+              print('PAGES_BUILD_REQUEST_FAILED',error.code)
+              raise
+          PY
