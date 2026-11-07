@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {DatabaseSync} from 'node:sqlite';
+import worker,{ORDER} from '../classroom/state/worker/index.mjs';
+const db=new DatabaseSync(':memory:');db.exec(readFileSync(new URL('../classroom/state/drizzle/0000_classroom.sql',import.meta.url),'utf8'));
+const DB={prepare(sql){return {args:[],bind(...args){this.args=args;return this;},async first(){return db.prepare(sql).get(...this.args);},execute(){return {results:db.prepare(sql).all(...this.args)};}};},async batch(statements){db.exec('BEGIN');try{const rows=statements.map(statement=>statement.execute());db.exec('COMMIT');return rows;}catch(error){db.exec('ROLLBACK');throw error;}}};
+const env={DB,CLASSROOM_WRITE_SECRET:'test-only-secret'};
+const call=(method='GET',input,authorized=false)=>worker.fetch(new Request('https://example.test/api/state',{method,headers:{...(input?{'Content-Type':'application/json'}:{}),...(authorized?{Authorization:'Bearer test-only-secret'}:{})},body:input?JSON.stringify(input):undefined}),env);
+let response=await call();assert.equal(response.status,200);assert.deepEqual((await response.json()).allowedIds,[ORDER[0]]);
+response=await call('PUT',{allowedIds:[ORDER[3]],revision:0});assert.equal(response.status,401,'anonymous writes are rejected');
+response=await call('PUT',{allowedIds:[ORDER[3]],revision:0},true);assert.equal(response.status,200);assert.deepEqual((await response.json()).allowedIds,[ORDER[0],ORDER[3]]);
+response=await call();assert.deepEqual((await response.json()).allowedIds,[ORDER[0],ORDER[3]],'another student receives the saved state');
+response=await call('PUT',{allowedIds:ORDER,revision:0},true);assert.equal(response.status,409,'stale teacher tabs cannot overwrite current grants');
+response=await call('PUT',{allowedIds:['unknown'],revision:1},true);assert.equal(response.status,400);
+response=await call('PUT',{allowedIds:[],revision:1},true);assert.equal(response.status,200);assert.deepEqual((await response.json()).allowedIds,[ORDER[0]],'cube cannot be removed');
+response=await call('PUT',{allowedIds:['__free__'],revision:2},true);assert.equal(response.status,200);assert.deepEqual((await response.json()).allowedIds,[ORDER[0],'__free__']);
+assert.equal(response.headers.get('Access-Control-Allow-Origin'),'https://playa2021git.github.io');
+console.log('PASS: persistent permissions, anonymous write rejection, arbitrary grants, stale update protection, reset, free-practice control, CORS.');

@@ -11,7 +11,7 @@ for(const m of html.matchAll(/id="([^"]+)"/g))sandbox[m[1]]=el(m[1]);
 vm.createContext(sandbox);
 for(const script of scripts)vm.runInContext(script.replace(/^init\(\);$/m,''),sandbox);
 function run(code){return vm.runInContext(code,sandbox);}
-run("setupLearningControls();model=parseGri(createSampleGri());learningDimensionMode='both';");
+run("applyClassroomState({allowedIds:LESSON_LIBRARY.map(item=>item.id).concat('__free__'),revision:1});setupLearningControls();model=parseGri(createSampleGri());learningDimensionMode='both';");
 assert.equal(run("learningFormat(30)"),'30');
 assert.equal(run("learningLevels('x',learningBounds()).join(',')"),'0,40,80');
 for(const mode of ['none','ortho','iso','both'])for(const view of ['front','right','top','iso']){
@@ -181,3 +181,12 @@ run('draw();drawPngExport();toggleViewMode();draw();');
 assert.equal(run('four'),true);
 run('toggleHiddenLines();');assert.equal(run('showHiddenLines'),true);
 console.log('PASS: 立体伝言ゲーム① matches uploaded STL, 150mm dimensions, curved surfaces, rendering/export and four views.');
+
+run("applyClassroomState({allowedIds:['lesson-cube-20mm'],revision:2});");assert.equal(run("classroomCanChoose('lesson-7')"),false);
+run("selectLesson(LESSON_LIBRARY.find(item=>item.id==='lesson-7'));");assert.equal(run('activeLesson.id'),'lesson-cube-20mm','cannot select an unreleased model');
+run("applyClassroomState({allowedIds:['lesson-cube-20mm','lesson-6'],revision:3});selectLesson(LESSON_LIBRARY.find(item=>item.id==='lesson-6'));");assert.equal(run('activeLesson.id'),'lesson-6','arbitrary nonsequential lesson can be allowed');
+run("applyClassroomState({allowedIds:['lesson-cube-20mm'],revision:4});");assert.equal(run('activeLesson.id'),'lesson-cube-20mm','revoking active model restores cube');
+run('selectLesson(null);');assert.equal(run('activeLesson.id'),'lesson-cube-20mm','free practice requires permission');
+run('runSelfTests();');assert.equal(el('testStatus').textContent,'自己テスト：15/15件成功','self-tests also pass under initial restrictions');
+assert.equal(el('embeddedStlButton').disabled,true,'no alternate built-in selector before free-practice permission');
+console.log('PASS: classroom defaults, arbitrary grants, revoked active model, free-practice gating, startup checks.');
