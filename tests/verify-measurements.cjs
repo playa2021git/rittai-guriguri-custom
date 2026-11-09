@@ -79,7 +79,12 @@ for(let i=0;i<8;i++){
      return {hidden,visible};
    })()`);
    assert(visibility.hidden>0&&visibility.visible>0,'classify actual cube/ramp hidden and visible edges');
-   const sizes=run('activeLesson.id')==='lesson-cube-20mm'?[20,20,20]:run('activeLesson.id')==='lesson-6'?[30,20,10]:run('activeLesson.id')==='lesson-5'?[20,20,20]:[30,20,20];
+   const sizes={
+     'lesson-cube-20mm':[20,20,20],
+     'lesson-5':[30,30,30],
+     'lesson-6':[45,30,15],
+     'lesson-7':[30,20,20]
+   }[run('activeLesson.id')];
    for(const [i,axis] of ['x','y','z'].entries())assert.equal(run(`model.max.${axis}-model.min.${axis}`),sizes[i]);
    run('selectLesson(activeLesson);');assert.equal(run('four'),false);
    continue;
@@ -124,12 +129,25 @@ function meshContains(faces,p){
  return hits.length%2===1;
 }
 const base=run("LESSON_LIBRARY.find(item=>item.id==='lesson-5').faces"),notch=run("LESSON_LIBRARY.find(item=>item.id==='lesson-6').faces");
-assert(meshContains(base,[15,5,15]),'20mm base, 10mm high');assert(meshContains(base,[5,15,5]),'10mm cube above base');
-assert(!meshContains(base,[15,15,5])&&!meshContains(base,[5,15,15]),'upper cube must be only 10 x 10mm');
-assert(meshContains(notch,[5,15,5])&&meshContains(notch,[25,15,5])&&meshContains(notch,[15,5,5]),'U sides and bottom remain solid');
-assert(!meshContains(notch,[15,15,5]),'10 x 10mm notch remains open through 10mm depth');
+assert(meshContains(base,[22.5,7.5,22.5]),'30mm base, 15mm high');assert(meshContains(base,[7.5,22.5,7.5]),'15mm cube above base');
+assert(!meshContains(base,[22.5,22.5,7.5])&&!meshContains(base,[7.5,22.5,22.5]),'upper cube must be only 15 x 15mm');
+assert(meshContains(notch,[7.5,22.5,7.5])&&meshContains(notch,[37.5,22.5,7.5])&&meshContains(notch,[22.5,7.5,7.5]),'U sides and bottom remain solid');
+assert(!meshContains(notch,[22.5,22.5,7.5]),'15 x 15mm notch remains open through 15mm depth');
+for(const [id,expectedLevels] of [
+ ['lesson-5',['0,15,30','0,15,30','0,15,30']],
+ ['lesson-6',['0,15,30,45','0,15,30','0,15']]
+]){
+ const lesson=run(`LESSON_LIBRARY.find(item=>item.id==='${id}')`);
+ const gri=fs.readFileSync(path.join(__dirname,'..','lessons',lesson.name+'.gri'),'utf8');
+ assert.equal(gri.replace(/\r\n/g,'\n'),lesson.text,'downloadable GRI matches the lesson');
+ run(`selectLesson(LESSON_LIBRARY.find(item=>item.id==='${id}'));`);
+ for(const [i,axis] of ['x','y','z'].entries()){
+   assert.equal(run(`learningLevels('${axis}',learningBounds()).join(',')`),expectedLevels[i]);
+ }
+ assert.equal(run('canToggleHiddenLines()'),true);
+}
 run('selectLesson(null);loadGri(LESSON_LIBRARY[0].text,"standalone.gri",{preserveView:true});');assert.equal(run('canToggleHiddenLines()'),true,'standalone copy of added GRI also retains hidden-line support');
-console.log('PASS: 20mm base + 10mm cube, 30 x 20 x 10mm concave model with a 10mm open notch, standalone GRI surface matching.');
+console.log('PASS: 30mm base + 15mm cube, 45 x 30 x 15mm concave model with a 15mm open notch, standalone GRI surface matching.');
 
 run("selectLesson(LESSON_LIBRARY.find(item=>item.id==='lesson-cube-20mm'));toggleDrawingMode();");assert.equal(run('inverted'),false);assert.equal(run('model.triangles.length'),0,'drawing mode keeps editable wireframe');
 run('toggleDrawingMode();');assert.equal(run('model.griSurface'),true,'registered surfaces restored after editing view');
