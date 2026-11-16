@@ -319,6 +319,7 @@
       <div>タブレット：ピンチで拡大縮小／自由視点上でスワイプ回転</div>
       <div>タブレット：三本指で上下すると線の太さを変更</div>
       <div>４面モードの各ラベル：クリック/タップで１面表示</div>
+      <div>４面モードでは、図をダブルクリックで非表示。空白をダブルクリックで再表示。</div>
     </div>
     <div id="drawingModeHelp">
       <div class="helpTitle">.gri描画専用操作</div>
@@ -510,6 +511,7 @@ function toggleLessonTeacher(){
   if(!activeLesson)return;
   if(lessonTeacherUnlocked){selectLesson(activeLesson);return;}
   lessonTeacherUnlocked=!lessonTeacherUnlocked;keys.clear();moving=false;stopTouchInertia();mouseRotateGesture=null;touchPointers.clear();touchGesture=null;
+  hiddenFourViews.clear();
   four=lessonTeacherUnlocked||activeLesson.mode==='ortho';lon=Math.PI/4;lat=ISO_LAT;
   clearPreservedFourFreeView();syncViewModeClass();fit();updateLessonControls();markRenderDirty();
 }
@@ -562,8 +564,9 @@ function drawLesson(exporting=false){
   ctx.fillStyle=exporting||!inverted?'#fff':'#000';ctx.fillRect(0,0,canvas.width,canvas.height);
   if(activeLesson.mode==='iso')render(views.iso,{x:0,y:0,w:canvas.width,h:canvas.height});
   else{
-    for(const [label,view,x,y,w,h] of layout){
-      if(view)render(view,{x:x*canvas.width,y:y*canvas.height,w:w*canvas.width,h:h*canvas.height});
+    for(const pane of layout){
+      const [label,view]=pane;
+      if(view&&!hiddenFourViews.has(label))render(view,fourViewRect(pane));
     }
     ctx.save();ctx.fillStyle=exporting||!inverted?'#555':'#bbb';ctx.font=`${15*dpr()}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillText('等角図を紙にかこう',canvas.width*.75,canvas.height*.25);ctx.restore();
@@ -579,7 +582,7 @@ function setupLearningControls(){
   viewModeButton.textContent=four?'１面モードにする':'４面モードにする';
   $('learningGrid').addEventListener('change',e=>{learningGridEnabled=e.target.checked;markRenderDirty();});
   $('learningDimensions').addEventListener('change',e=>{learningDimensionMode=e.target.value;markRenderDirty();});
-  $('learningReset').addEventListener('click',()=>{if(lessonIsRestricted())return;four=true;viewModeButton.textContent='１面モードにする';lon=Math.PI/4;lat=ISO_LAT;moving=false;clearPreservedFourFreeView();syncViewModeClass();fit();markRenderDirty();});
+  $('learningReset').addEventListener('click',()=>{if(lessonIsRestricted())return;hiddenFourViews.clear();four=true;viewModeButton.textContent='１面モードにする';lon=Math.PI/4;lat=ISO_LAT;moving=false;clearPreservedFourFreeView();syncViewModeClass();fit();markRenderDirty();});
 }
 function learningScale(){return learningDimensionMode==='none'?1:.70;}
 function learningBounds(){
@@ -711,6 +714,10 @@ let mouseRotateGesture=null;
 let threeFingerLineWidthGesture=null;
 const views={front:['正面図',0,0],right:['右側面図',Math.PI/2,0],top:['平面図',0,TOP_LAT],iso:['等角図',Math.PI/4,ISO_LAT]};
 const layout=[['平面図',views.top,0,0,.5,.5],['自由視点',null,.5,0,.5,.5],['正面図',views.front,0,.5,.5,.5],['右側面図',views.right,.5,.5,.5,.5]];
+const hiddenFourViews=new Set();
+function fourViewRect([,,x,y,w,h]){
+  return {x:x*canvas.width,y:y*canvas.height,w:w*canvas.width,h:h*canvas.height};
+}
 let initialGri=loadStartupGri();
 let currentGriText=initialGri.text,currentGriFileName=initialGri.name,model=parseGri(currentGriText,currentGriFileName);
 let currentModelType='gri';
@@ -1338,6 +1345,7 @@ function loadGri(text,name,options={}){
   const keepView={lon:normalizeAngle(lon),lat,eLon:normalizeAngle(eLon),eLat,zoom,four,inverted};
   stlReturnState=null;
   model=parseGri(text,name);
+  hiddenFourViews.clear();
   attachLessonSurface(text);
   currentModelType='gri';
   currentGriText=text;
@@ -2071,7 +2079,15 @@ function clearAllEdges(){
 }
 
 function draw(){if(lessonIsRestricted()){drawLesson();return;}ctx.fillStyle=inverted?'#000':'#f4f4f4';ctx.fillRect(0,0,canvas.width,canvas.height);four?drawFour():drawView(lon,lat,{x:0,y:0,w:canvas.width,h:canvas.height},null,true,inverted)}
-function drawFour(){layout.forEach(([label,view,x,y,w,h])=>{const viewInverted=inverted;drawView(view?view[1]:lon,view?view[2]:lat,{x:x*canvas.width,y:y*canvas.height,w:w*canvas.width,h:h*canvas.height},label,!view,viewInverted)});ctx.strokeStyle=inverted?'#555':'#bbb';ctx.lineWidth=dpr();ctx.beginPath();ctx.moveTo(canvas.width/2,0);ctx.lineTo(canvas.width/2,canvas.height);ctx.moveTo(0,canvas.height/2);ctx.lineTo(canvas.width,canvas.height/2);ctx.stroke()}
+function drawFour(){
+  for(const pane of layout){
+    const [label,view]=pane;
+    if(!hiddenFourViews.has(label))drawView(view?view[1]:lon,view?view[2]:lat,fourViewRect(pane),label,!view);
+  }
+  ctx.strokeStyle=inverted?'#555':'#bbb';ctx.lineWidth=dpr();ctx.beginPath();
+  ctx.moveTo(canvas.width/2,0);ctx.lineTo(canvas.width/2,canvas.height);
+  ctx.moveTo(0,canvas.height/2);ctx.lineTo(canvas.width,canvas.height/2);ctx.stroke();
+}
 function drawView(lo,la,r,label,axis,viewInverted=inverted){
   if(!lessonViewAllowed(lo,la))return;
   const basis=viewBasis(lo,la),scale=(r.h/5.2)*zoom*learningScale(),cx=r.x+r.w/2,cy=r.y+r.h/2;
@@ -2673,7 +2689,15 @@ function edgeFunction(ax,ay,bx,by,cx,cy){return (cx-ax)*(by-ay)-(cy-ay)*(bx-ax)}
 function labelBox(t,r,viewInverted=inverted){const rect=getLabelRect(t,r);const s=dpr();ctx.fillStyle=viewInverted?'rgba(0,0,0,.7)':'rgba(255,255,255,.85)';ctx.strokeStyle=viewInverted?'#555':'#bbb';ctx.font=`${14*s}px sans-serif`;ctx.beginPath();ctx.roundRect(rect.x,rect.y,rect.w,rect.h,8*s);ctx.fill();ctx.stroke();ctx.fillStyle=viewInverted?'#ccc':'#555';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(t,rect.x+rect.w/2,rect.y+rect.h/2)}
 function getLabelRect(t,r){const s=dpr();ctx.save();ctx.font=`${14*s}px sans-serif`;const w=ctx.measureText(t).width+20*s,h=28*s,x=r.x+10*s,y=(four&&(t==='自由視点'||t==='平面図'))?r.y+r.h-h-10*s:r.y+10*s;ctx.restore();return{x,y,w,h,label:t}}
 function fourLabelRect(t,r){return getLabelRect(t,r)}
-function getFourLabelHit(clientX,clientY){if(!four)return null;const p=clientToCanvasPoint(clientX,clientY);for(const [label,view,x,y,w,h] of layout){const rect=fourLabelRect(label,{x:x*canvas.width,y:y*canvas.height,w:w*canvas.width,h:h*canvas.height});if(pointInRect(p,rect))return{label,view};}return null;}
+function getFourLabelHit(clientX,clientY){
+  if(!four)return null;
+  const p=clientToCanvasPoint(clientX,clientY);
+  for(const pane of layout){
+    const [label,view]=pane;
+    if(!hiddenFourViews.has(label)&&pointInRect(p,fourLabelRect(label,fourViewRect(pane))))return {label,view};
+  }
+  return null;
+}
 function activateFourLabelView(hit){
   if(lessonIsRestricted())return;
   if(!hit)return false;
@@ -3069,9 +3093,11 @@ function pointInTriangle2D(p,a,b,c,tol=0){
 }
 function isPointerOnModelInFreeView(clientX,clientY){
   if(!isFreeViewTouchPoint(clientX,clientY))return false;
-  const p=clientToCanvasPoint(clientX,clientY),r=getFreeViewRect();
+  return isPointOnModel(clientToCanvasPoint(clientX,clientY),getFreeViewRect(),lon,lat);
+}
+function isPointOnModel(p,r,lo,la){
   if(!pointInRect(p,r))return false;
-  const basis=viewBasis(lon,lat),viewScale=(r.h/5.2)*zoom*learningScale(),cx=r.x+r.w/2,cy=r.y+r.h/2;
+  const basis=viewBasis(lo,la),viewScale=(r.h/5.2)*zoom*learningScale(),cx=r.x+r.w/2,cy=r.y+r.h/2;
   const threshold=Math.max(10*dpr(),lineWidth*dpr()+8*dpr());
 
   // STLなど面を持つ立体では、投影された三角形の内側を「立体上」とみなす。
@@ -3088,6 +3114,23 @@ function isPointerOnModelInFreeView(clientX,clientY){
     if(distancePointToSegment2D(p,a,b)<=threshold)return true;
   }
   return false;
+}
+function handleCanvasDoubleClick(e){
+  if(!four||!inverted)return;
+  const p=clientToCanvasPoint(e.clientX,e.clientY);
+  const pane=layout.find(item=>pointInRect(p,fourViewRect(item)));
+  if(!pane)return;
+  const [label,view]=pane;
+  const lo=view?view[1]:lon,la=view?view[2]:lat;
+  if(!hiddenFourViews.delete(label)){
+    if(lessonViewAllowed(lo,la)&&(!lessonIsRestricted()||view)&&isPointOnModel(p,fourViewRect(pane),lo,la)){
+      hiddenFourViews.add(label);
+    }else if(hiddenFourViews.size){
+      hiddenFourViews.clear();
+    }else return;
+  }
+  e.preventDefault();
+  markRenderDirty();
 }
 function findEdgeNearFreeView(clientX,clientY){
   if(inverted)return -1;
@@ -3195,7 +3238,7 @@ function isFreeViewTouchPoint(clientX,clientY){
   const r=canvas.getBoundingClientRect();
   if(clientX<r.left||clientX>r.right||clientY<r.top||clientY>r.bottom)return false;
   if(!four)return true;
-  return clientX>=r.left+r.width/2&&clientY<r.top+r.height/2;
+  return !hiddenFourViews.has('自由視点')&&clientX>=r.left+r.width/2&&clientY<r.top+r.height/2;
 }
 function touchDistance(a,b){const dx=a.x-b.x,dy=a.y-b.y;return Math.hypot(dx,dy)}
 function touchMidpoint(a,b){return{x:(a.x+b.x)/2,y:(a.y+b.y)/2}}
@@ -4146,9 +4189,10 @@ function drawPngExport(){
   ctx.fillStyle='#fff';
   ctx.fillRect(0,0,canvas.width,canvas.height);
   if(four){
-    layout.forEach(([label,view,x,y,w,h])=>{
-      drawPngExportView(view?view[1]:lon,view?view[2]:lat,{x:x*canvas.width,y:y*canvas.height,w:w*canvas.width,h:h*canvas.height});
-    });
+    for(const pane of layout){
+      const [label,view]=pane;
+      if(!hiddenFourViews.has(label))drawPngExportView(view?view[1]:lon,view?view[2]:lat,fourViewRect(pane));
+    }
     ctx.strokeStyle='#ddd';
     ctx.lineWidth=dpr();
     ctx.beginPath();
@@ -4475,6 +4519,7 @@ function loadStl(buffer,name,deadline=0){
   if(lessonIsRestricted())return;
   stlReturnState=null;
   const parsed=parseStlSurface(buffer,name,deadline);
+  hiddenFourViews.clear();
   // STLを読み込んでも、直前の自由視点の向きは変えない。
   // 以前は読み込み後に等角図へ moveTo していたため、STLを差し替えるたびに
   // 右上の自由視点や1面表示中の向きが戻ってしまっていた。
@@ -4797,6 +4842,7 @@ confirmOverlay.addEventListener('click',e=>{if(e.target===confirmOverlay)closeCl
 stepLabel.addEventListener('click',()=>{stepControl.classList.toggle('open')});
 stepSelect.addEventListener('change',()=>{drawingStep=Number(stepSelect.value);stepLabel.textContent=`ステップ：${drawingStep}mm`;stepControl.classList.remove('open')});
 canvas.addEventListener('click',handleCanvasClickForViewLabels);
+canvas.addEventListener('dblclick',handleCanvasDoubleClick);
 canvas.addEventListener('mousemove',handleCanvasMouseMove);
 canvas.addEventListener('mouseleave',handleCanvasMouseLeave);
 canvas.addEventListener('contextmenu',handleCanvasContextMenu);
