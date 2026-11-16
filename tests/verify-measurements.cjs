@@ -149,6 +149,22 @@ for(const [id,expectedLevels] of [
 run('selectLesson(null);loadGri(LESSON_LIBRARY[0].text,"standalone.gri",{preserveView:true});');assert.equal(run('canToggleHiddenLines()'),true,'standalone copy of added GRI also retains hidden-line support');
 console.log('PASS: 30mm base + 15mm cube, 45 x 30 x 15mm concave model with a 15mm open notch, standalone GRI surface matching.');
 
+run("selectLesson(LESSON_LIBRARY.find(item=>item.id==='lesson-5'));");
+for(const scale of [12,22,40,160]){
+ assert(run(`(()=>{
+   const basis=viewBasis(views.iso[1],views.iso[2]);
+   const zState=renderSurfaceTrianglesWithZBuffer(basis,${scale},523,400);
+   const edgeRuns=(start,end)=>{
+     const a=modelPoint(v(...start)),b=modelPoint(v(...end));
+     const pa=proj(a,basis,${scale},523,400),pb=proj(b,basis,${scale},523,400);
+     return getSurfaceEdgeVisibilityRuns(a,b,pa,pb,basis,zState,true);
+   };
+   const ridge=edgeRuns([15,15,15],[15,30,15]);
+   const back=edgeRuns([0,0,0],[0,30,0]);
+   return ridge.visible.length===1&&ridge.hidden.length===0&&back.hidden.length>0;
+ })()`),`visible ridge stays solid and rear edge stays hidden at scale ${scale}`);
+}
+
 run("selectLesson(LESSON_LIBRARY.find(item=>item.id==='lesson-cube-20mm'));toggleDrawingMode();");assert.equal(run('inverted'),false);assert.equal(run('model.triangles.length'),0,'drawing mode keeps editable wireframe');
 run('toggleDrawingMode();');assert.equal(run('model.griSurface'),true,'registered surfaces restored after editing view');
 

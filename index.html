@@ -2577,20 +2577,29 @@ function pointSegmentDistanceSq(p,a,bp){
 
 function getSurfaceEdgeVisibilityRuns(a,bp,pa,pb,basis,zState,includeHidden=true){
   const length=Math.hypot(pb.x-pa.x,pb.y-pa.y);
+  const triangleCount=(model.triangles||[]).length;
+  // 面の少ない立体は、画素の深度ではなく稜線上の正確な位置で遮蔽を調べる。
+  // 縮小時も、斜めの面を拾った隣接画素が手前の稜線を隠さない。
+  const useGeometry=triangleCount<=64;
   // V1.10: 複雑なSTLほど短い三角形辺が増えるため、画面上の長さと面数から
   // サンプル密度を適応させる。長い外形は保ちつつ過剰な128分割を抑える。
-  const complex=(model.triangles||[]).length>2000;
+  const complex=triangleCount>2000;
   const step=Math.max((complex?4:2.5)*dpr(),complex?7:5);
-  const samples=clamp(Math.ceil(length/step),complex?5:8,complex?64:128);
+  const samples=useGeometry?32:clamp(Math.ceil(length/step),complex?5:8,complex?64:128);
   const visible=[];
   const hidden=[];
   // V1.15: 全判定結果の配列を作らず、状態が変わった位置だけを逐次記録する。
   // V1.17: 稜線の端点深度を一度だけ計算し、通常表示では不要な隠れ区間を保持しない。
   const depthA=dot(a,basis.forward),depthB=dot(bp,basis.forward);
   let start=0;
-  let state=classifySurfaceEdgePointOnZBuffer(a,bp,pa,pb,basis,zState,0,depthA,depthB);
+  const classify=t=>{
+    if(!useGeometry)return classifySurfaceEdgePointOnZBuffer(a,bp,pa,pb,basis,zState,t,depthA,depthB);
+    const point=v(a.x+(bp.x-a.x)*t,a.y+(bp.y-a.y)*t,a.z+(bp.z-a.z)*t);
+    return isPointOccludedAnalytically(point,a,bp,basis)?'hidden':'visible';
+  };
+  let state=classify(0);
   for(let i=1;i<=samples;i++){
-    const next=classifySurfaceEdgePointOnZBuffer(a,bp,pa,pb,basis,zState,i/samples,depthA,depthB);
+    const next=classify(i/samples);
     if(next===state)continue;
     if(state==='visible')addSurfaceEdgeRun(visible,pa,pb,start/samples,(i-1)/samples);
     else if(state==='hidden'&&includeHidden)addSurfaceEdgeRun(hidden,pa,pb,start/samples,(i-1)/samples);
