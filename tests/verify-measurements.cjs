@@ -153,17 +153,19 @@ run("selectLesson(LESSON_LIBRARY.find(item=>item.id==='lesson-cube-20mm'));toggl
 run('toggleDrawingMode();');assert.equal(run('model.griSurface'),true,'registered surfaces restored after editing view');
 
 run("selectLesson(LESSON_LIBRARY.find(item=>item.id==='lesson-2'));");
-for(const [axis,size] of [['x',60],['y',40],['z',40]])assert.equal(run(`model.max.${axis}-model.min.${axis}`),size);
-assert.equal(run("learningLevels('x',learningBounds()).join(',')"),'0,20,40,60');
+for(const [axis,size] of [['x',45],['y',40],['z',30]])assert.equal(run(`model.max.${axis}-model.min.${axis}`),size);
+assert.equal(run("learningLevels('x',learningBounds()).join(',')"),'0,15,30,45');
 assert.equal(run("learningLevels('y',learningBounds()).join(',')"),'0,20,40');
+assert.equal(run("learningLevels('z',learningBounds()).join(',')"),'0,30');
+assert.equal(fs.readFileSync(path.join(__dirname,'..','lessons',run("activeLesson.name")+'.gri'),'utf8').replace(/\r\n/g,'\n'),run('activeLesson.text'));
 assert.equal(run('lessonIsRestricted()'),true);
-console.log('PASS: orthographic-to-isometric problem 2 is 60 x 40 x 40mm with 20mm steps.');
+console.log('PASS: orthographic-to-isometric problem 2 is 45mm wide, 30mm deep and 40mm high.');
 
 run("selectLesson(LESSON_LIBRARY.find(item=>item.id==='lesson-1'));");
 for(const axis of ['x','y','z'])assert.equal(run(`model.max.${axis}-model.min.${axis}`),40);
 run('toggleStlSurface();');assert.equal(run('showStlSurface'),false);
 run('selectLesson(LESSON_LIBRARY[1]);');assert.equal(run('showStlSurface'),true,'new selection restores initial face colors');
-console.log('PASS: problem 1 maximum is 40mm; problem 2 maximum is 60mm; all 8 lessons start with colored faces.');
+console.log('PASS: problem 1 maximum is 40mm; all 8 lessons start with colored faces.');
 
 assert.equal(run('LESSON_LIBRARY.map(item=>item.id).join(",")'),'lesson-cube-20mm,lesson-7,lesson-5,lesson-6,lesson-3,lesson-4,lesson-1,lesson-2,lesson-dengon-1');
 run('selectLesson(LESSON_LIBRARY[0]);');assert.equal(run('activeLesson.id'),'lesson-cube-20mm');assert.equal(run('four'),false);assert.equal(run('showStlSurface'),true);assert.equal(el('lessonSelect').value,'lesson-cube-20mm');
