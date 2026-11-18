@@ -249,3 +249,19 @@ run('selectLesson(null);');assert.equal(run('activeLesson.id'),'lesson-cube-20mm
 run('runSelfTests();');assert.equal(el('testStatus').textContent,'自己テスト：15/15件成功','self-tests also pass under initial restrictions');
 assert.equal(el('embeddedStlButton').disabled,true,'no alternate built-in selector before free-practice permission');
 console.log('PASS: classroom defaults, arbitrary grants, revoked active model, free-practice gating, startup checks.');
+
+(async()=>{
+ sandbox.localStlFile={name:'local.STL',arrayBuffer:async()=>sandbox.uploadedStl};
+ await run('handleSelectedModelFile(localStlFile)');
+ assert.equal(run('currentModelType'),'stl');
+ assert.equal(run('currentGriFileName'),'local.STL');
+ assert.equal(run('activeLesson'),null);
+ assert.equal(el('lessonSelect').value,'__local_stl__');
+ run("applyClassroomState({allowedIds:['lesson-cube-20mm','lesson-2'],revision:5});");
+ assert.equal(run('currentGriFileName'),'local.STL','permission polling preserves local STL');
+ run("selectLesson(LESSON_LIBRARY.find(item=>item.id==='lesson-2'));");
+ await run('handleSelectedModelFile(localStlFile)');
+ assert.equal(run('activeLesson.id'),'lesson-2');
+ assert.equal(run('currentModelType'),'gri','restricted exercise keeps its model');
+ console.log('PASS: local STL works without free practice and cannot replace a restricted exercise.');
+})().catch(error=>{console.error(error);process.exitCode=1;});

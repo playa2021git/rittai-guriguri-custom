@@ -11,9 +11,15 @@ function refreshClassroomChoices(){
   const option=document.createElement('option');option.value=item.id;
   option.textContent=item.name.replace(/^2022/,'')+(item.mode==='ortho'?'【三面図のみ】':item.mode==='open'?'【等角図で開始・4面切替可】':'【等角図のみ】');select.appendChild(option);
  }
- if(classroomCanUseFreePractice()){const option=document.createElement('option');option.value='';option.textContent='自由練習（別の立体に切り替え）';select.appendChild(option);}
- select.value=activeLesson?activeLesson.id:'';
+ if(!activeLesson&&model.isLocalStl){
+  const option=document.createElement('option');option.value='__local_stl__';option.disabled=true;option.textContent='読み込んだSTL';select.appendChild(option);
+ }
+ if(classroomCanUseFreePractice()){
+  const option=document.createElement('option');option.value='';option.textContent='自由練習（別の立体に切り替え）';select.appendChild(option);
+ }
+ select.value=lessonSelectionValue();
 }
+function lessonSelectionValue(){return activeLesson?activeLesson.id:model.isLocalStl?'__local_stl__':'';}
 function updateClassroomTeacherLink(){
  const link=$('classroomTeacherLink');if(link)link.style.display=lessonTeacherUnlocked?'block':'none';
 }
@@ -24,7 +30,7 @@ function applyClassroomState(data){
  const changed=next.join(',')!==classroomAllowedIds.join(',');classroomAllowedIds=next;classroomRevision=data.revision;
  if(changed){
   refreshClassroomChoices();
-  if(!classroomCanChoose(activeLesson?activeLesson.id:'__free__'))selectLesson(LESSON_LIBRARY.find(item=>item.id==='lesson-cube-20mm'));
+  if(!model.isLocalStl&&!classroomCanChoose(activeLesson?activeLesson.id:'__free__'))selectLesson(LESSON_LIBRARY.find(item=>item.id==='lesson-cube-20mm'));
   else updateLessonControls();
  }
  updateLessonControls();

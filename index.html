@@ -425,9 +425,15 @@ function refreshClassroomChoices(){
   const option=document.createElement('option');option.value=item.id;
   option.textContent=item.name.replace(/^2022/,'')+(item.mode==='ortho'?'【三面図のみ】':item.mode==='open'?'【等角図で開始・4面切替可】':'【等角図のみ】');select.appendChild(option);
  }
- if(classroomCanUseFreePractice()){const option=document.createElement('option');option.value='';option.textContent='自由練習（別の立体に切り替え）';select.appendChild(option);}
- select.value=activeLesson?activeLesson.id:'';
+ if(!activeLesson&&model.isLocalStl){
+  const option=document.createElement('option');option.value='__local_stl__';option.disabled=true;option.textContent='読み込んだSTL';select.appendChild(option);
+ }
+ if(classroomCanUseFreePractice()){
+  const option=document.createElement('option');option.value='';option.textContent='自由練習（別の立体に切り替え）';select.appendChild(option);
+ }
+ select.value=lessonSelectionValue();
 }
+function lessonSelectionValue(){return activeLesson?activeLesson.id:model.isLocalStl?'__local_stl__':'';}
 function updateClassroomTeacherLink(){
  const link=$('classroomTeacherLink');if(link)link.style.display=lessonTeacherUnlocked?'block':'none';
 }
@@ -438,7 +444,7 @@ function applyClassroomState(data){
  const changed=next.join(',')!==classroomAllowedIds.join(',');classroomAllowedIds=next;classroomRevision=data.revision;
  if(changed){
   refreshClassroomChoices();
-  if(!classroomCanChoose(activeLesson?activeLesson.id:'__free__'))selectLesson(LESSON_LIBRARY.find(item=>item.id==='lesson-cube-20mm'));
+  if(!model.isLocalStl&&!classroomCanChoose(activeLesson?activeLesson.id:'__free__'))selectLesson(LESSON_LIBRARY.find(item=>item.id==='lesson-cube-20mm'));
   else updateLessonControls();
  }
  updateLessonControls();
@@ -482,7 +488,7 @@ function setupLessonControls(){
   refreshClassroomChoices();
   select.addEventListener('change',()=>{
     const item=LESSON_LIBRARY.find(x=>x.id===select.value)||null;
-    confirmBeforeLoadingNewModel(()=>selectLesson(item),()=>{select.value=activeLesson?activeLesson.id:'';});
+    confirmBeforeLoadingNewModel(()=>selectLesson(item),()=>{select.value=lessonSelectionValue();});
   });
   // Capture before the normal keyboard shortcuts, including when a control is focused.
   window.addEventListener('keydown',e=>{
@@ -499,10 +505,12 @@ function setupLessonControls(){
 }
 function selectLesson(item){
   if(!classroomCanChoose(item?item.id:'__free__')){refreshClassroomChoices();return;}
+  const leavingLocalStl=model.isLocalStl;
   // Loading a lesson always revokes a previous teacher reveal.
   activeLesson=item;lessonTeacherUnlocked=false;keys.clear();shift=false;
   inverted=true;moving=false;stopTouchInertia();mouseRotateGesture=null;touchPointers.clear();touchGesture=null;
   loadGri(item?item.text:createSampleGri(),item?item.name+'.gri':'自由練習.gri',{preserveView:true});
+  if(leavingLocalStl)refreshClassroomChoices();
   showStlSurface=true;
   four=!item||item.mode==='ortho';lon=Math.PI/4;lat=ISO_LAT;viewName.textContent=item?(item.mode==='ortho'?'三面図':'等角図'):'自由視点';
   clearPreservedFourFreeView();syncViewModeClass();fit();updateColor(true);updateLessonControls();markRenderDirty();
@@ -517,8 +525,8 @@ function toggleLessonTeacher(){
 }
 function updateLessonControls(){
   const locked=lessonIsRestricted();
-  $('lessonSelect').value=activeLesson?activeLesson.id:'';
-  $('lessonStatus').textContent=!activeLesson?'自由練習：すべての表示が使えます。':activeLesson.mode==='open'?'教材：等角図で開始。1面／4面表示を切り替えられます。':lessonTeacherUnlocked?'先生確認中：両方の図を表示できます。':activeLesson.mode==='ortho'?'出題中：三面図を見て、等角図を紙にかこう。':'出題中：等角図を見て、正投影図を紙にかこう。';
+  $('lessonSelect').value=lessonSelectionValue();
+  $('lessonStatus').textContent=!activeLesson?(model.isLocalStl?'読み込んだSTLを表示中。':'自由練習：すべての表示が使えます。'):activeLesson.mode==='open'?'教材：等角図で開始。1面／4面表示を切り替えられます。':lessonTeacherUnlocked?'先生確認中：両方の図を表示できます。':activeLesson.mode==='ortho'?'出題中：三面図を見て、等角図を紙にかこう。':'出題中：等角図を見て、正投影図を紙にかこう。';
   for(const id of ['learningReset','viewModeButton','saveGriButton','exportStlFromGriButton','embeddedStlButton','embeddedStlSelect','infoDrawingModeButton'])$(id).disabled=locked;
   for(const button of document.querySelectorAll('[data-info-action]')){
     if(['top','front','right','iso','drawing-mode','load-model','clear-model','export-gri-stl'].includes(button.dataset.infoAction))button.disabled=locked;
@@ -526,8 +534,10 @@ function updateLessonControls(){
   viewModeButton.textContent=four?'１面モードにする':'４面モードにする';
   if(!classroomCanUseFreePractice()){
     for(const id of ['saveGriButton','exportStlFromGriButton','embeddedStlButton','embeddedStlSelect','infoDrawingModeButton'])$(id).disabled=true;
-    for(const button of document.querySelectorAll('[data-info-action]'))if(['drawing-mode','load-model','clear-model','export-gri-stl'].includes(button.dataset.infoAction))button.disabled=true;
+    for(const button of document.querySelectorAll('[data-info-action]'))if(['drawing-mode','clear-model','export-gri-stl'].includes(button.dataset.infoAction))button.disabled=true;
   }
+  const importLabel=document.querySelector('[data-info-action="load-model"] .infoLabel');
+  if(importLabel)importLabel.textContent=classroomCanUseFreePractice()?'：立体を読み込む（GRI、STL）':'：STLを読み込む';
   updateClassroomTeacherLink();
 }
 function attachLessonSurface(text){
@@ -4310,7 +4320,7 @@ window.addEventListener('keydown',e=>{
   if(k==='f'||code==='keyf'){
     e.preventDefault();
     e.stopPropagation();
-    griFileInput.click();
+    openModelFilePicker();
     return;
   }
 
@@ -4375,6 +4385,12 @@ window.addEventListener('keyup',e=>{keys.delete(e.key.toLowerCase());shift=e.shi
 window.addEventListener('gamepadconnected',()=>setDualshockHelpConnected(true));
 window.addEventListener('gamepaddisconnected',()=>setDualshockHelpConnected(!!getActiveGamepad()));
 griFileInput.addEventListener('click',()=>{griFileInput.value='';});
+function openModelFilePicker(){
+  if(lessonIsRestricted())return;
+  configureFileInputForDevice();
+  if(!classroomCanUseFreePractice()&&!isIPadOrIPhone())griFileInput.setAttribute('accept','.stl');
+  griFileInput.click();
+}
 griFileInput.addEventListener('change',async e=>{
   const f=e.target.files&&e.target.files[0];
   if(!f){focusViewerForKeys();return;}
@@ -4389,20 +4405,34 @@ griFileInput.addEventListener('change',async e=>{
 });
 
 async function handleSelectedModelFile(f){
-  if(!classroomCanUseFreePractice())return;
+  if(lessonIsRestricted())return;
   const isStl=/\.stl$/i.test(f.name||'');
+  if(!isStl&&!classroomCanUseFreePractice()){
+    fileStatus.textContent='GRIの読み込みには自由練習の許可が必要です。STLを選んでください。';
+    griFileInput.value='';
+    focusViewerForKeys();
+    return;
+  }
   const stlDeadline=isStl?performance.now()+STL_LOAD_DISPLAY_TIMEOUT_MS:0;
   const previousState={model,currentModelType,currentGriText,currentGriFileName,showHiddenLines,showStlSurface,griUnsavedLineData,lon,lat,eLon,eLat,zoom,four};
   try{
     fileStatus.textContent=`読み込み中：${f.name||'選択ファイル'}`;
     if(isStl){
       const buffer=await readSelectedArrayBufferFile(f);
+      if(model!==previousState.model||lessonIsRestricted())return;
       checkStlLoadDisplayDeadline(stlDeadline);
-      loadStl(buffer,f.name||'selected.stl',stlDeadline);
+      loadStl(buffer,f.name||'selected.stl',stlDeadline,true);
+      model.isLocalStl=true;
+      activeLesson=null;
+      lessonTeacherUnlocked=false;
+      refreshClassroomChoices();
+      updateLessonControls();
     }else{
       const text=await readSelectedTextFile(f);
+      if(model!==previousState.model||lessonIsRestricted()||!classroomCanUseFreePractice())return;
       if(!String(text||'').trim())throw Error('選択したGRIファイルが空です。');
       loadGri(text,f.name||'selected.gri');
+      if(previousState.model.isLocalStl){refreshClassroomChoices();updateLessonControls();}
     }
     griFileInput.value='';
     focusViewerForKeys();
@@ -4487,6 +4517,7 @@ function loadEmbeddedStlFromLibrary(index){
     const buffer=base64ToArrayBuffer(item.base64);
     checkStlLoadDisplayDeadline(deadline);
     loadStl(buffer,item.name,deadline);
+    if(previousState.model.isLocalStl){refreshClassroomChoices();updateLessonControls();}
     if(model){model.isEmbeddedStl=true;updateModelFileNameDisplay(model);}
     currentEmbeddedStlLibraryIndex=clampEmbeddedStlIndex(index);
     gamepadEmbeddedStlIndex=currentEmbeddedStlLibraryIndex;
@@ -4523,8 +4554,8 @@ function readSelectedArrayBufferFileByReader(file){
     reader.readAsArrayBuffer(file);
   });
 }
-function loadStl(buffer,name,deadline=0){
-  if(!classroomCanUseFreePractice())return;
+function loadStl(buffer,name,deadline=0,localFile=false){
+  if(!localFile&&!classroomCanUseFreePractice())return;
   if(lessonIsRestricted())return;
   stlReturnState=null;
   const parsed=parseStlSurface(buffer,name,deadline);
@@ -4795,7 +4826,7 @@ document.querySelectorAll('[data-info-action]').forEach(button=>{
     else if(action==='line-thicker'){changeLine(.25);click(performance.now());}
     else if(action==='line-thinner'){changeLine(-.25);click(performance.now());}
     else if(action==='toggle-beep'){toggleBeep();}
-    else if(action==='load-model'){griFileInput.click();return;}
+    else if(action==='load-model'){openModelFilePicker();return;}
     else if(action==='export-gri-stl'){convertCurrentModelWithMKey();return;}
     else if(action==='clear-model')openClearConfirm();
     else if(action==='png-output')savePng();
