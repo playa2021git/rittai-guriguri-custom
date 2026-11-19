@@ -38,16 +38,24 @@ console.log('Existing self-tests:',el('testStatus').textContent);
 const rotateButton=el('autoRotateButton');
 run("selectLesson(LESSON_LIBRARY[0]);four=true;updateAutoRotation(0);");
 let time=0;
-for(const [nextLabel, changesX, changesY] of [
- ['Y軸回転',true,false],['XY同時回転',false,true],
- ['回転を止める',true,true],['X軸回転',false,false]
+for(const [nextLabel, turnsAroundHeight, tilts] of [
+ ['手前・奥に回す',true,false],['両方同時に回す',false,true],
+ ['回転を止める',true,true],['高さ線を中心に回す',false,false]
 ]){
- const x=run('autoRotationX'),y=run('autoRotationY');
+ const heightAngle=run('autoRotationAroundHeight'),tiltAngle=run('autoRotationTilt');
  rotateButton.events.click();
  assert.equal(rotateButton.textContent,nextLabel);
  run(`updateAutoRotation(${time});updateAutoRotation(${time+=32});`);
- assert.equal(run('autoRotationX')!==x,changesX,nextLabel);
- assert.equal(run('autoRotationY')!==y,changesY,nextLabel);
+ assert.equal(run('autoRotationAroundHeight')!==heightAngle,turnsAroundHeight,nextLabel);
+ assert.equal(run('autoRotationTilt')!==tiltAngle,tilts,nextLabel);
+ const basis=run('displayViewBasis(lon,lat,true)');
+ assert.equal(basis.right.y,0,'the model height line has no sideways slant');
+ if(turnsAroundHeight&&!tilts){
+  assert(Math.abs(basis.forward.y-run('viewBasis(lon,lat).forward.y'))<1e-12,'turning around height keeps elevation fixed');
+ }
+ if(!turnsAroundHeight&&tilts){
+  assert(Math.abs(basis.right.x-run('Math.cos(lon+autoRotationAroundHeight)'))<1e-12,'tilt rotates about screen right');
+ }
 }
 assert(run('dot(displayViewBasis(lon,lat,true).forward,viewBasis(lon,lat).forward)<.99999'));
 for(const name of ['front','right','top']){
@@ -55,11 +63,11 @@ for(const name of ['front','right','top']){
 }
 run('four=false;lon=lat=0;updateAutoRotation(200);');
 assert.equal(rotateButton.hidden,true);
-assert.equal(run('autoRotationX+autoRotationY'),0);
+assert.equal(run('autoRotationAroundHeight+autoRotationTilt'),0);
 run("selectLesson(LESSON_LIBRARY.find(item=>item.mode==='iso'));updateAutoRotation(232);");
 assert.equal(rotateButton.hidden,true,'locked isometric exercises keep their fixed angle');
 assert.equal(run('autoRotationMode'),0);
-console.log('PASS: X/Y/XY rotation, stop, fixed orthographic panes and locked exercises.');
+console.log('PASS: Height-line rotation, forward/backward tilt, combined rotation, stop, fixed orthographic panes and locked exercises.');
 
 // Classroom visibility must hold at the renderer, export, and input boundaries.
 run("setupLessonControls();");

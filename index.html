@@ -349,7 +349,7 @@
     <div id="padStatus" class="small">ゲームパッド：未接続 または 未操作</div>
     <div id="testStatus" class="small">自己テスト：未実行</div>
   </div>
-  <div id="viewer" tabindex="-1"><canvas id="canvas"></canvas><div id="displaySizeControls" role="group" aria-label="立体の表示操作"><button id="hiddenLineToggleBottom" type="button">かくれ線を表示する</button><button id="surfaceToggleBottom" type="button">面の色を表示しない</button><button id="displaySizeMinus" type="button" aria-label="表示サイズを縮小">− 縮小</button><button id="displaySizePlus" type="button" aria-label="表示サイズを拡大">＋ 拡大</button><button id="autoRotateButton" type="button" hidden>X軸回転</button></div><button id="viewModeButton" type="button">４面モードにする</button><div id="drawingModeLabel">.gri描画</div><div id="topRightInfo"><div id="appTitle">立体グリグリ custom｜原作・謝辞</div></div><div id="bottomRightControls"><div id="modelFileNameDisplay" style="display:none"></div><button id="externalInfoButton" type="button" aria-haspopup="dialog" aria-expanded="false">ⓘ 原作・謝辞・ライセンス</button><button id="embeddedStlButton" type="button">内蔵STL</button></div><div id="embeddedStlPopup"><div id="embeddedStlPopupHeader"><span>内蔵STLを読み込む</span><button id="embeddedStlPopupClose" type="button" aria-label="閉じる">×</button></div><div id="embeddedStlPopupList"></div></div><button id="modeToggleBottom" type="button">.gri描画にする</button><div id="griButtonPanel" aria-label="GRI描画ボタン操作">
+  <div id="viewer" tabindex="-1"><canvas id="canvas"></canvas><div id="displaySizeControls" role="group" aria-label="立体の表示操作"><button id="hiddenLineToggleBottom" type="button">かくれ線を表示する</button><button id="surfaceToggleBottom" type="button">面の色を表示しない</button><button id="displaySizeMinus" type="button" aria-label="表示サイズを縮小">− 縮小</button><button id="displaySizePlus" type="button" aria-label="表示サイズを拡大">＋ 拡大</button><button id="autoRotateButton" type="button" hidden>高さ線を中心に回す</button></div><button id="viewModeButton" type="button">４面モードにする</button><div id="drawingModeLabel">.gri描画</div><div id="topRightInfo"><div id="appTitle">立体グリグリ custom｜原作・謝辞</div></div><div id="bottomRightControls"><div id="modelFileNameDisplay" style="display:none"></div><button id="externalInfoButton" type="button" aria-haspopup="dialog" aria-expanded="false">ⓘ 原作・謝辞・ライセンス</button><button id="embeddedStlButton" type="button">内蔵STL</button></div><div id="embeddedStlPopup"><div id="embeddedStlPopupHeader"><span>内蔵STLを読み込む</span><button id="embeddedStlPopupClose" type="button" aria-label="閉じる">×</button></div><div id="embeddedStlPopupList"></div></div><button id="modeToggleBottom" type="button">.gri描画にする</button><div id="griButtonPanel" aria-label="GRI描画ボタン操作">
   <div id="griPanelTitleBar">作図ツール</div>
   <div class="griButtonGrid">
     <button type="button" class="jumpBtn" data-gri-action="x10minus">＜</button>
@@ -763,8 +763,8 @@ let currentEmbeddedStlLibraryIndex=-1;
 let gamepadEmbeddedStlRestoreState=null;
 let gamepadEmbeddedStlPreviewLoaded=false;
 const autoRotateButton=$('autoRotateButton');
-const autoRotationActions=['X軸回転','Y軸回転','XY同時回転','回転を止める'];
-let autoRotationMode=0,autoRotationX=0,autoRotationY=0,autoRotationTime=null;
+const autoRotationActions=['高さ線を中心に回す','手前・奥に回す','両方同時に回す','回転を止める'];
+let autoRotationMode=0,autoRotationAroundHeight=0,autoRotationTilt=0,autoRotationTime=null;
 
 init();
 
@@ -2100,10 +2100,10 @@ function canAutoRotate(){
   return Math.abs(normalizeAngle(lon-Math.PI/4))<1e-7&&Math.abs(lat-ISO_LAT)<1e-7;
 }
 function resetAutoRotation(){
-  if(autoRotationX||autoRotationY)markRenderDirty();
+  if(autoRotationAroundHeight||autoRotationTilt)markRenderDirty();
   if(autoRotationMode)autoRotateButton.textContent=autoRotationActions[0];
   autoRotationMode=0;
-  autoRotationX=autoRotationY=0;
+  autoRotationAroundHeight=autoRotationTilt=0;
   autoRotationTime=null;
 }
 function cycleAutoRotation(){
@@ -2119,21 +2119,20 @@ function updateAutoRotation(now){
   if(!autoRotationMode)return;
   const step=Math.min(now-(autoRotationTime??now),50)*Math.PI/6000;
   autoRotationTime=now;
-  if(autoRotationMode!==2)autoRotationX=normalizeAngle(autoRotationX+step);
-  if(autoRotationMode!==1)autoRotationY=normalizeAngle(autoRotationY+step);
+  if(autoRotationMode!==2)autoRotationAroundHeight=normalizeAngle(autoRotationAroundHeight+step);
+  if(autoRotationMode!==1)autoRotationTilt=normalizeAngle(autoRotationTilt+step);
   if(step)markRenderDirty();
 }
 function displayViewBasis(lo,la,rotatable){
   const basis=viewBasis(lo,la);
-  if(!rotatable||!canAutoRotate()||!(autoRotationX||autoRotationY))return basis;
-  const cx=Math.cos(autoRotationX),sx=Math.sin(autoRotationX);
-  const cy=Math.cos(autoRotationY),sy=Math.sin(autoRotationY);
-  // Apply the inverse of the model's X-then-Y rotation to the camera basis.
-  const rotate=({x,y,z})=>{
-    const unrotatedZ=x*sy+z*cy;
-    return v(x*cy-z*sy,y*cx+unrotatedZ*sx,unrotatedZ*cx-y*sx);
-  };
-  return {right:rotate(basis.right),up:rotate(basis.up),forward:rotate(basis.forward)};
+  if(!rotatable||!canAutoRotate()||!(autoRotationAroundHeight||autoRotationTilt))return basis;
+  // Longitude follows the model's height line; latitude tips around screen right.
+  // Use the full angle so the tilt continues through the top and bottom views.
+  const longitude=lo+autoRotationAroundHeight;
+  const latitude=la+autoRotationTilt;
+  const right=v(Math.cos(longitude),0,-Math.sin(longitude));
+  const forward=v(Math.cos(latitude)*Math.sin(longitude),Math.sin(latitude),Math.cos(latitude)*Math.cos(longitude));
+  return {right,up:cross(forward,right),forward};
 }
 
 function draw(){if(lessonIsRestricted()){drawLesson();return;}ctx.fillStyle=inverted?'#000':'#f4f4f4';ctx.fillRect(0,0,canvas.width,canvas.height);four?drawFour():drawView(lon,lat,{x:0,y:0,w:canvas.width,h:canvas.height},null,true,inverted)}
