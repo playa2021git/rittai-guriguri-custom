@@ -762,6 +762,10 @@ let stlReturnState=null;
 let currentEmbeddedStlLibraryIndex=-1;
 let gamepadEmbeddedStlRestoreState=null;
 let gamepadEmbeddedStlPreviewLoaded=false;
+const autoRotateButton=$('autoRotateButton');
+const autoRotationActions=['X軸回転','Y軸回転','XY同時回転','回転を止める'];
+let autoRotationMode=0,autoRotationX=0,autoRotationY=0,autoRotationTime=null;
+
 init();
 
 function init(){setupLearningControls();setupLessonControls();setupInfoToggle();setupGriButtonPanel();syncViewModeClass();configureFileInputForDevice();setupModelFileDrop();populateEmbeddedStlSelect();setupEmbeddedStlPopup();updateColor();updateHiddenLineButton();updateSurfaceButton();updateBeepButtonLabel();resize();selectLesson(LESSON_LIBRARY[0]);updateFileStatus(model);runSelfTests();setupClassroomAccess();requestAnimationFrame(loop)}
@@ -2089,10 +2093,6 @@ function clearAllEdges(){
   markRenderDirty();
   draw();
 }
-
-const autoRotateButton=$('autoRotateButton');
-const autoRotationActions=['X軸回転','Y軸回転','XY同時回転','回転を止める'];
-let autoRotationMode=0,autoRotationX=0,autoRotationY=0,autoRotationTime=null;
 
 function canAutoRotate(){
   if(lessonIsRestricted()||!inverted||moving)return false;
