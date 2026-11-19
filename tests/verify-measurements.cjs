@@ -34,6 +34,33 @@ assert(run("learningLevels('x',learningBounds()).includes(30)"),'STL dimensions 
 console.log('PASS: 16 dimension visibility combinations, raw mm levels, drawing, PNG rendering, existing self-tests.');
 console.log('Existing self-tests:',el('testStatus').textContent);
 
+// Verify the button sequence and keep the three orthographic panes fixed.
+const rotateButton=el('autoRotateButton');
+run("selectLesson(LESSON_LIBRARY[0]);four=true;updateAutoRotation(0);");
+let time=0;
+for(const [nextLabel, changesX, changesY] of [
+ ['Y軸回転',true,false],['XY同時回転',false,true],
+ ['回転を止める',true,true],['X軸回転',false,false]
+]){
+ const x=run('autoRotationX'),y=run('autoRotationY');
+ rotateButton.events.click();
+ assert.equal(rotateButton.textContent,nextLabel);
+ run(`updateAutoRotation(${time});updateAutoRotation(${time+=32});`);
+ assert.equal(run('autoRotationX')!==x,changesX,nextLabel);
+ assert.equal(run('autoRotationY')!==y,changesY,nextLabel);
+}
+assert(run('dot(displayViewBasis(lon,lat,true).forward,viewBasis(lon,lat).forward)<.99999'));
+for(const name of ['front','right','top']){
+ assert(run(`JSON.stringify(displayViewBasis(...views.${name}.slice(1),false))===JSON.stringify(viewBasis(...views.${name}.slice(1)))`));
+}
+run('four=false;lon=lat=0;updateAutoRotation(200);');
+assert.equal(rotateButton.hidden,true);
+assert.equal(run('autoRotationX+autoRotationY'),0);
+run("selectLesson(LESSON_LIBRARY.find(item=>item.mode==='iso'));updateAutoRotation(232);");
+assert.equal(rotateButton.hidden,true,'locked isometric exercises keep their fixed angle');
+assert.equal(run('autoRotationMode'),0);
+console.log('PASS: X/Y/XY rotation, stop, fixed orthographic panes and locked exercises.');
+
 // Classroom visibility must hold at the renderer, export, and input boundaries.
 run("setupLessonControls();");
 assert.equal(run('LESSON_LIBRARY.length'),9);

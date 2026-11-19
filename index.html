@@ -349,7 +349,7 @@
     <div id="padStatus" class="small">ゲームパッド：未接続 または 未操作</div>
     <div id="testStatus" class="small">自己テスト：未実行</div>
   </div>
-  <div id="viewer" tabindex="-1"><canvas id="canvas"></canvas><div id="displaySizeControls" role="group" aria-label="立体の表示操作"><button id="hiddenLineToggleBottom" type="button">かくれ線を表示する</button><button id="surfaceToggleBottom" type="button">面の色を表示しない</button><button id="displaySizeMinus" type="button" aria-label="表示サイズを縮小">− 縮小</button><button id="displaySizePlus" type="button" aria-label="表示サイズを拡大">＋ 拡大</button></div><button id="viewModeButton" type="button">４面モードにする</button><div id="drawingModeLabel">.gri描画</div><div id="topRightInfo"><div id="appTitle">立体グリグリ custom｜原作・謝辞</div></div><div id="bottomRightControls"><div id="modelFileNameDisplay" style="display:none"></div><button id="externalInfoButton" type="button" aria-haspopup="dialog" aria-expanded="false">ⓘ 原作・謝辞・ライセンス</button><button id="embeddedStlButton" type="button">内蔵STL</button></div><div id="embeddedStlPopup"><div id="embeddedStlPopupHeader"><span>内蔵STLを読み込む</span><button id="embeddedStlPopupClose" type="button" aria-label="閉じる">×</button></div><div id="embeddedStlPopupList"></div></div><button id="modeToggleBottom" type="button">.gri描画にする</button><div id="griButtonPanel" aria-label="GRI描画ボタン操作">
+  <div id="viewer" tabindex="-1"><canvas id="canvas"></canvas><div id="displaySizeControls" role="group" aria-label="立体の表示操作"><button id="hiddenLineToggleBottom" type="button">かくれ線を表示する</button><button id="surfaceToggleBottom" type="button">面の色を表示しない</button><button id="displaySizeMinus" type="button" aria-label="表示サイズを縮小">− 縮小</button><button id="displaySizePlus" type="button" aria-label="表示サイズを拡大">＋ 拡大</button><button id="autoRotateButton" type="button" hidden>X軸回転</button></div><button id="viewModeButton" type="button">４面モードにする</button><div id="drawingModeLabel">.gri描画</div><div id="topRightInfo"><div id="appTitle">立体グリグリ custom｜原作・謝辞</div></div><div id="bottomRightControls"><div id="modelFileNameDisplay" style="display:none"></div><button id="externalInfoButton" type="button" aria-haspopup="dialog" aria-expanded="false">ⓘ 原作・謝辞・ライセンス</button><button id="embeddedStlButton" type="button">内蔵STL</button></div><div id="embeddedStlPopup"><div id="embeddedStlPopupHeader"><span>内蔵STLを読み込む</span><button id="embeddedStlPopupClose" type="button" aria-label="閉じる">×</button></div><div id="embeddedStlPopupList"></div></div><button id="modeToggleBottom" type="button">.gri描画にする</button><div id="griButtonPanel" aria-label="GRI描画ボタン操作">
   <div id="griPanelTitleBar">作図ツール</div>
   <div class="griButtonGrid">
     <button type="button" class="jumpBtn" data-gri-action="x10minus">＜</button>
@@ -504,6 +504,7 @@ function setupLessonControls(){
   updateLessonControls();
 }
 function selectLesson(item){
+  resetAutoRotation();
   if(!classroomCanChoose(item?item.id:'__free__')){refreshClassroomChoices();return;}
   const leavingLocalStl=model.isLocalStl;
   // Loading a lesson always revokes a previous teacher reveal.
@@ -586,13 +587,14 @@ function drawLesson(exporting=false){
 /* Chromebook classroom measurement overlays. Raw GRI/STL coordinates are millimetres. */
 var learningGridEnabled=true, learningDimensionMode='none';
 function setupLearningControls(){
+  autoRotateButton.addEventListener('click',cycleAutoRotation);
   $('displaySizeControls').addEventListener('pointerdown',e=>e.stopPropagation());
   $('displaySizeMinus').addEventListener('click',e=>{e.stopPropagation();changeZoom(1/1.2-1);});
   $('displaySizePlus').addEventListener('click',e=>{e.stopPropagation();changeZoom(.2);});
   viewModeButton.textContent=four?'１面モードにする':'４面モードにする';
   $('learningGrid').addEventListener('change',e=>{learningGridEnabled=e.target.checked;markRenderDirty();});
   $('learningDimensions').addEventListener('change',e=>{learningDimensionMode=e.target.value;markRenderDirty();});
-  $('learningReset').addEventListener('click',()=>{if(lessonIsRestricted())return;hiddenFourViews.clear();four=true;viewModeButton.textContent='１面モードにする';lon=Math.PI/4;lat=ISO_LAT;moving=false;clearPreservedFourFreeView();syncViewModeClass();fit();markRenderDirty();});
+  $('learningReset').addEventListener('click',()=>{if(lessonIsRestricted())return;resetAutoRotation();hiddenFourViews.clear();four=true;viewModeButton.textContent='１面モードにする';lon=Math.PI/4;lat=ISO_LAT;moving=false;clearPreservedFourFreeView();syncViewModeClass();fit();markRenderDirty();});
 }
 function learningScale(){return learningDimensionMode==='none'?1:.70;}
 function learningBounds(){
@@ -1087,7 +1089,7 @@ function markRenderDirty(){
   renderDirty=true;
 }
 function isInteractiveRenderActive(){
-  if(moving||inertiaLastTime)return true;
+  if(moving||inertiaLastTime||autoRotationMode)return true;
   if(mouseRotateGesture)return true;
   if(touchGesture&&(touchGesture.type==='rotate'||touchGesture.type==='pinch'))return true;
   return keys.has('arrowleft')||keys.has('arrowright')||keys.has('arrowup')||keys.has('arrowdown');
@@ -2088,6 +2090,52 @@ function clearAllEdges(){
   draw();
 }
 
+const autoRotateButton=$('autoRotateButton');
+const autoRotationActions=['X軸回転','Y軸回転','XY同時回転','回転を止める'];
+let autoRotationMode=0,autoRotationX=0,autoRotationY=0,autoRotationTime=null;
+
+function canAutoRotate(){
+  if(lessonIsRestricted()||!inverted||moving)return false;
+  if(four&&hiddenFourViews.has('自由視点'))return false;
+  return Math.abs(normalizeAngle(lon-Math.PI/4))<1e-7&&Math.abs(lat-ISO_LAT)<1e-7;
+}
+function resetAutoRotation(){
+  if(autoRotationX||autoRotationY)markRenderDirty();
+  if(autoRotationMode)autoRotateButton.textContent=autoRotationActions[0];
+  autoRotationMode=0;
+  autoRotationX=autoRotationY=0;
+  autoRotationTime=null;
+}
+function cycleAutoRotation(){
+  if(!canAutoRotate())return;
+  autoRotationMode=(autoRotationMode+1)%autoRotationActions.length;
+  autoRotationTime=null;
+  autoRotateButton.textContent=autoRotationActions[autoRotationMode];
+}
+function updateAutoRotation(now){
+  const available=canAutoRotate();
+  if(autoRotateButton.hidden!==!available)autoRotateButton.hidden=!available;
+  if(!available)resetAutoRotation();
+  if(!autoRotationMode)return;
+  const step=Math.min(now-(autoRotationTime??now),50)*Math.PI/6000;
+  autoRotationTime=now;
+  if(autoRotationMode!==2)autoRotationX=normalizeAngle(autoRotationX+step);
+  if(autoRotationMode!==1)autoRotationY=normalizeAngle(autoRotationY+step);
+  if(step)markRenderDirty();
+}
+function displayViewBasis(lo,la,rotatable){
+  const basis=viewBasis(lo,la);
+  if(!rotatable||!canAutoRotate()||!(autoRotationX||autoRotationY))return basis;
+  const cx=Math.cos(autoRotationX),sx=Math.sin(autoRotationX);
+  const cy=Math.cos(autoRotationY),sy=Math.sin(autoRotationY);
+  // Apply the inverse of the model's X-then-Y rotation to the camera basis.
+  const rotate=({x,y,z})=>{
+    const unrotatedZ=x*sy+z*cy;
+    return v(x*cy-z*sy,y*cx+unrotatedZ*sx,unrotatedZ*cx-y*sx);
+  };
+  return {right:rotate(basis.right),up:rotate(basis.up),forward:rotate(basis.forward)};
+}
+
 function draw(){if(lessonIsRestricted()){drawLesson();return;}ctx.fillStyle=inverted?'#000':'#f4f4f4';ctx.fillRect(0,0,canvas.width,canvas.height);four?drawFour():drawView(lon,lat,{x:0,y:0,w:canvas.width,h:canvas.height},null,true,inverted)}
 function drawFour(){
   for(const pane of layout){
@@ -2100,7 +2148,7 @@ function drawFour(){
 }
 function drawView(lo,la,r,label,axis,viewInverted=inverted){
   if(!lessonViewAllowed(lo,la))return;
-  const basis=viewBasis(lo,la),scale=(r.h/5.2)*zoom*learningScale(),cx=r.x+r.w/2,cy=r.y+r.h/2;
+  const basis=displayViewBasis(lo,la,axis),scale=(r.h/5.2)*zoom*learningScale(),cx=r.x+r.w/2,cy=r.y+r.h/2;
   const previousViewClipRect=activeViewClipRect;
   activeViewClipRect=r;
   ctx.save();
@@ -4210,7 +4258,7 @@ function drawPngExport(){
   if(four){
     for(const pane of layout){
       const [label,view]=pane;
-      if(!hiddenFourViews.has(label))drawPngExportView(view?view[1]:lon,view?view[2]:lat,fourViewRect(pane));
+      if(!hiddenFourViews.has(label))drawPngExportView(view?view[1]:lon,view?view[2]:lat,fourViewRect(pane),!view);
     }
     ctx.strokeStyle='#ddd';
     ctx.lineWidth=dpr();
@@ -4221,12 +4269,12 @@ function drawPngExport(){
     ctx.lineTo(canvas.width,canvas.height/2);
     ctx.stroke();
   }else{
-    drawPngExportView(lon,lat,{x:0,y:0,w:canvas.width,h:canvas.height});
+    drawPngExportView(lon,lat,{x:0,y:0,w:canvas.width,h:canvas.height},true);
   }
 }
-function drawPngExportView(lo,la,r){
+function drawPngExportView(lo,la,r,rotatable=false){
   if(!lessonViewAllowed(lo,la))return;
-  const basis=viewBasis(lo,la),scale=(r.h/5.2)*zoom*learningScale(),cx=r.x+r.w/2,cy=r.y+r.h/2;
+  const basis=displayViewBasis(lo,la,rotatable),scale=(r.h/5.2)*zoom*learningScale(),cx=r.x+r.w/2,cy=r.y+r.h/2;
   ctx.save();
   ctx.fillStyle='#fff';
   ctx.fillRect(r.x,r.y,r.w,r.h);
@@ -4950,6 +4998,7 @@ function loop(now){
   if(!lessonIsRestricted())updateKeys();
   updateMove(now);
   if(!lessonIsRestricted())updateTouchInertia(now);
+  updateAutoRotation(now);
   const interactive=isInteractiveRenderActive();
   if(lastInteractiveRendering&&!interactive)markRenderDirty();
   lastInteractiveRendering=interactive;
